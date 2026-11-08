@@ -9,11 +9,12 @@ export type {
   ExperimentHandle,
   ExperimentMeta,
   ExperimentModule,
-  ExperimentStatus,
   MountOptions,
 } from "./types";
 
 import type { ExperimentDefinition } from "./types";
+
+export { ExperimentErrorBoundary } from "./error-boundary";
 
 /** Identity helper that gives experiment authors full type inference on `C`. */
 export function defineExperiment<C>(definition: ExperimentDefinition<C>): ExperimentDefinition<C> {

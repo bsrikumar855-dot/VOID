@@ -32,8 +32,6 @@ export interface MountOptions<C> {
   onChange(config: C): void;
 }
 
-export type ExperimentStatus = "idle" | "running" | "paused" | "done" | "error";
-
 export interface ExperimentHandle<C> {
   play(): void;
   pause(): void;
