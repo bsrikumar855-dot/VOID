@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · VOID",
   },
   description:
-    "Don't just browse technology. Interact with it. Open-source interactive experiments you can change, share and remix.",
+    "Don't just browse technology. Interact with it. Open-source interactive experiments you can change and share.",
 };
 
 export const viewport: Viewport = {
@@ -39,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         {/* Static string, no user data: applies a saved theme before first paint. */}
+        {/* eslint-disable-next-line react/no-danger -- constant string, reviewed (ADR 0004) */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-bg text-ink">

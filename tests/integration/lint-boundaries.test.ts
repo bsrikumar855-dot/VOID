@@ -32,6 +32,23 @@ describe("architecture boundaries are enforced by ESLint", () => {
       ),
     ).toContain("no-restricted-imports");
   });
+  it("experiments may not reach engine internals through a relative path either", async () => {
+    expect(
+      await violations(
+        exp,
+        'import { decodeShare } from "../../../engine/share/codec";\nexport { decodeShare };\n',
+      ),
+    ).toContain("no-restricted-imports");
+  });
+  it("experiments may import their own files relatively", async () => {
+    expect(await violations(exp, 'import { x } from "../config";\nexport { x };\n')).not.toContain(
+      "no-restricted-imports",
+    );
+  });
+  it("react/no-danger is enforced (CSP allows inline scripts, ADR 0004)", async () => {
+    const code = 'export const A = () => <div dangerouslySetInnerHTML={{ __html: "x" }} />;\n';
+    expect(await violations("src/components/x.tsx", code)).toContain("react/no-danger");
+  });
   it("experiments may not import other experiments", async () => {
     expect(
       await violations(

@@ -5,8 +5,8 @@ import nextTs from "eslint-config-next/typescript";
 // Architecture boundaries (ADR 0002 D6). Proven by tests/integration/lint-boundaries.test.ts.
 const experimentImportPatterns = [
   {
-    group: ["@/engine/*", "!@/engine/public"],
-    message: "Experiments may import only from @/engine/public.",
+    group: ["@/engine/*", "!@/engine/public", "**/engine/*", "!**/engine/public"],
+    message: "Experiments may import only from @/engine/public (aliased or relative).",
   },
   {
     group: ["@/experiments/*"],
@@ -96,6 +96,11 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   ...boundaryRules,
+  {
+    // ADR 0004: CSP allows inline scripts, so raw HTML injection must be a deliberate,
+    // reviewed exception. The only allowed use is the static theme-init script in layout.tsx.
+    rules: { "react/no-danger": "error" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
