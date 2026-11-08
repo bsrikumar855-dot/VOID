@@ -40,7 +40,22 @@ _Last updated: 2026-11-08, after the first vertical slice and its independent re
 
 Notes: the default Playwright parallelism (8 workers) crashed browsers once while the C: drive was full; always use `--workers=2` on this machine. E2E runs against a production build only.
 
-**Not run:** Lighthouse (no performance numbers exist; the 90+/95+ targets are **unmeasured**), cross-browser (only Edge/Chromium), screen-reader testing (**Untested**), real-device mobile, GitHub CI (the workflow file exists but has never run), `/review`, `/qa`, `/ship` gstack workflows, penetration testing or automated security scanning.
+**Not run:** Lighthouse itself (a run via `npx lighthouse@latest` was blocked because it would download and execute an unpinned package; it needs the owner's go-ahead or a pinned dev dependency, so the spec's 90+/95+ Lighthouse targets are **unmeasured**; the local probe below is not Lighthouse), cross-browser (only Edge/Chromium), screen-reader testing (**Untested**), real-device mobile, GitHub CI (the workflow file exists but has never run), `/review`, `/qa`, `/ship` gstack workflows, penetration testing or automated security scanning.
+
+## Local performance probe (not Lighthouse)
+
+Measured 2026-11-08 with Playwright + Edge against the production build on localhost, using the browser's own PerformanceObserver APIs (median of 3 fresh-context loads, then 3.5 s for the lazy experiment to mount and run). No network throttling, so real-world numbers will be worse; CPU 4x slowdown for the mobile profile. TBT~ is the sum of long-task time beyond 50 ms, an approximation of Total Blocking Time. Script: not committed (scratch).
+
+| Profile | Route | FCP = LCP | CLS | TBT~ | JS (compressed) |
+|---|---|---|---|---|---|
+| 360px, 4x CPU | `/` | 284 ms | 0.000 | 301 ms (3 long tasks) | 181 KB / 11 files |
+| 360px, 4x CPU | `/experiments/algorithm-arena` | 220 ms | 0.000 | 258 ms (4) | 181 KB / 11 files |
+| 360px, 4x CPU | `/explore` | 244 ms | 0.000 | 167 ms (1) | 181 KB / 11 files |
+| 1280px | `/` | 100 ms | 0.002 | 0 ms | 181 KB / 11 files |
+| 1280px | `/experiments/algorithm-arena` | 112 ms | 0.000 | 0 ms | 181 KB / 11 files |
+| 1280px | `/explore` | 104 ms | 0.000 | 0 ms | 181 KB / 11 files |
+
+What this does and does not show: the headline is the LCP element and paints fast; the hero placeholder causes no measurable layout shift. **Concerns:** blocking time on the throttled mobile profile (167-301 ms) is near or above the 200 ms "good" bound; the identical 181 KB / 11 files on every route, including `/explore` which has no experiment, suggests prefetching or shared chunks that have not been analysed (a bundle analysis is needed before claiming code-splitting works). Not measured: real network, real devices, INP, Lighthouse scoring, other browsers.
 
 ## Independent reviews (ADR 0006)
 
@@ -77,7 +92,7 @@ Three read-only model reviewers (QA, security, critical) read the code and tests
 
 ## Next
 
-1. Measure Lighthouse on `/` and an experiment page; record results verbatim, including failures.
+1. Run Lighthouse properly (owner go-ahead or a pinned dev dependency) and analyse the bundle: why every route ships 181 KB, and the mobile blocking time.
 2. Write `DESIGN.md` for Impeccable from the built world.
 3. Build experiment #2 (Neural Network Playground, per ADR 0002) on the engine, which also proves the "add one folder" claim; then Glitch Lab. Terminal when scheduled by the owner.
 4. Close the open test and security-hygiene items above.
