@@ -9,7 +9,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { MAX_SIZE, MAX_VALUE, MIN_SIZE, type ArenaConfig } from "../config";
+import type { ArenaConfig } from "../config";
+import { MAX_SIZE, MAX_VALUE, MIN_SIZE } from "../limits";
 import { PRESETS } from "../core/data";
 import { createRace, laneAt } from "../core/sim";
 import { ALGORITHMS, ALGORITHM_INFO, type AlgorithmId } from "../core/sorts";

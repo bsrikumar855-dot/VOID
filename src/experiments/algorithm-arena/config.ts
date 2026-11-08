@@ -2,9 +2,9 @@ import { z } from "zod";
 import { ALGORITHMS } from "./core/sorts";
 import { PRESETS } from "./core/data";
 
-export const MIN_SIZE = 8;
-export const MAX_SIZE = 128;
-export const MAX_VALUE = 256;
+import { MAX_SIZE, MAX_VALUE, MIN_SIZE } from "./limits";
+
+export { MAX_SIZE, MAX_VALUE, MIN_SIZE };
 
 /**
  * Shareable state of the Algorithm Arena: what to race and on what data.
