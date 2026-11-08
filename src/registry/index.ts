@@ -1,6 +1,7 @@
 import "@/engine/zod-config"; // must be first: sets Zod's jitless flag before any schema is built
 import type { AnyExperimentDefinition } from "@/engine/public";
 import { algorithmArena } from "@/experiments/algorithm-arena/manifest";
+import { neuralNetwork } from "@/experiments/neural-network/manifest";
 
 /**
  * THE list of experiments. The homepage (hero = the FIRST entry, plus every example link),
@@ -8,7 +9,7 @@ import { algorithmArena } from "@/experiments/algorithm-arena/manifest";
  * list. To add an experiment: create src/experiments/<slug>/, then add an import and one
  * entry here. (The header has a single generic Explore link; it does not list experiments.)
  */
-export const experiments: readonly AnyExperimentDefinition[] = [algorithmArena];
+export const experiments: readonly AnyExperimentDefinition[] = [algorithmArena, neuralNetwork];
 
 export function listExperiments(): readonly AnyExperimentDefinition[] {
   return experiments;
