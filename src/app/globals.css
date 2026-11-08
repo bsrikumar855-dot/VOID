@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * VOID design tokens — single source of truth (docs/design-system.md §2, §10).
+ * Components use the semantic names below, never raw hex.
+ * tests/unit/contrast.test.ts parses this file and verifies WCAG contrast,
+ * so edit values here and nowhere else.
+ *
+ * Dark is the spec palette (master spec §11). Light is a deliberate second set,
+ * not an inversion (ADR 0002 D8).
+ */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #090b10;
+  --surface: #11151e;
+  --surface-raised: #171d29;
+  --accent: #8b9dff;
+  --accent-ink: #090b10; /* text on an accent fill */
+  --accent-2: #a1f0c4;
+  --text: #f1f3f8;
+  --text-muted: #929bac;
+  --border: #252c39; /* decorative hairline only; not for control boundaries */
+  --border-strong: #66728a; /* control boundaries, focus affordances (>= 3:1) */
+  --danger: #ff8f8f;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f7fa;
+  --surface: #ffffff;
+  --surface-raised: #eceff5;
+  --accent: #3445c9;
+  --accent-ink: #ffffff;
+  --accent-2: #0b6b44;
+  --text: #10131a;
+  --text-muted: #4a5365;
+  --border: #d5dae3;
+  --border-strong: #6f7a8f;
+  --danger: #b3261e;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-2: var(--accent-2);
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-control: 2px;
+  --radius-panel: 4px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  /* Motion tokens (design-system §10.6) */
+  --dur-feedback: 120ms;
+  --dur-state: 240ms;
+  --dur-route: 480ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

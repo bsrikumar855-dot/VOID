@@ -1,0 +1,10 @@
+node_modules
+.next
+package-lock.json
+.claude
+docs/VOID-MASTER-SPEC.md
+test-results
+playwright-report
+docs
+AGENTS.md
+LICENSE
