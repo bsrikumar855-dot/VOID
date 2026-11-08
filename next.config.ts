@@ -37,7 +37,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  partialPrefetching: true,
+  // false on purpose: with partial prefetching, an unknown /experiments/<slug> can be served
+  // as a 200 static shell before notFound() resolves (soft 404). Verified: false => real 404.
+  // Revisit when Next removes the option (ADR 0005).
+  partialPrefetching: false,
   poweredByHeader: false,
   turbopack: {
     rules: {

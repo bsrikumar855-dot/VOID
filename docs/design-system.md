@@ -58,6 +58,8 @@ shadcn/ui is a source of accessible primitives (dialog, popover, tabs); each is 
 
 ---
 
+> **AMENDED 2026-11-08 by ADR 0005 (Impeccable craft floor).** Where section 10 below mentions a mono eyebrow above the headline, a left-rule callout, or mono for UI chrome, ADR 0005 overrides it: no eyebrow, no left-border callouts, mono only for data (counters, seed, URLs, complexity notation).
+
 ## 10. Design review decisions (2026-11-08) — binding for the first slice
 
 Result of the condensed `/plan-design-review` (see ADR 0003). Plan design completeness: **5/10 before, 8/10 after** these decisions. Remaining gap to 10: nothing here has been seen rendered; contrast ratios are unmeasured; no mockups exist. Those are closed by M1 (measure) and the browser review (look).
