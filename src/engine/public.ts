@@ -15,6 +15,7 @@ export type {
 import type { ExperimentDefinition } from "./types";
 
 export { ExperimentErrorBoundary } from "./error-boundary";
+export { mulberry32 } from "./rng";
 
 /** Identity helper that gives experiment authors full type inference on `C`. */
 export function defineExperiment<C>(definition: ExperimentDefinition<C>): ExperimentDefinition<C> {
