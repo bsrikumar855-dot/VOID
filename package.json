@@ -14,7 +14,8 @@
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run perf:budget && npm run test:e2e",
     "perf": "node scripts/perf/lighthouse.mjs",
-    "perf:budget": "node scripts/perf/budget.mjs"
+    "perf:budget": "node scripts/perf/budget.mjs",
+    "security:secrets": "node scripts/security/scan-secrets.mjs"
   },
   "dependencies": {
     "next": "16.4.5",
