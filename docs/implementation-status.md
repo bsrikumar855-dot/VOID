@@ -1,4 +1,4 @@
-# VOID — Implementation Status
+﻿# VOID — Implementation Status
 
 Single human-readable status file. Machine-readable task state lives in `docs/auto-builder/TASKS.md` (AUTO-BUILDER's source of truth); if they disagree, `TASKS.md` wins and this file is stale.
 
@@ -12,7 +12,7 @@ _Last updated: 2026-11-08 (end of the first vertical slice build; independent re
 |---|---|
 | Phase | First vertical slice (M1 + M2 + M3) built; independent reviews in progress |
 | Repo | https://github.com/bsrikumar855-dot/VOID, branch `main` |
-| **Blocker** | Commits after `4497533` are **not committed or pushed**: git is no longer installed on this machine (see "Environment problems"). The work exists on disk in `D:\VOID`. |
+| Blockers | None open. Git was missing for a while (see "Environment problems"); it was reinstalled (Git for Windows 2.56.0.4, installer hash verified by winget) and all work is committed and pushed (last: `9627cc1`). The Bash tool in the harness still reports a stale shell path; PowerShell is used for git. |
 | Deployed | No. Nothing is deployed; deployment needs the owner's authorisation. |
 
 ## The owner's first-slice definition
@@ -63,7 +63,6 @@ Not run: Lighthouse (no performance numbers exist; the 90+/95+ targets are **unm
 
 ## Known gaps and honest limitations
 
-- **No git on this machine** (below). Last pushed commit: `4497533`.
 - Impeccable's launcher/hook/comps not run (needs a binary download and paid image generation). Its craft-floor was applied by reading it; `DESIGN.md` in Impeccable's format is not written yet.
 - Share links carry no per-config preview image (fragment links; ADR 0002). "Private/Publish" do not exist (M7).
 - CSP allows `'unsafe-inline'` scripts (ADR 0004); it is not a strong XSS defence yet.
@@ -75,12 +74,11 @@ Not run: Lighthouse (no performance numbers exist; the 90+/95+ targets are **unm
 ## Environment problems found during this build
 
 1. **C: drive was full (0 GB free)** midway through, causing ENOSPC and browser crashes. I deleted two of my own scratch folders (reference scaffold, Impeccable clone) to recover to ~0.4 GB. The remaining use of C: is not mine.
-2. **Git for Windows disappeared**: `D:\Git` now contains only `bin\bash.exe` and `usr`, last modified 17:44 today; `cmd\git.exe` and `mingw64` are gone, and GitHub Desktop's bundled git is also missing. The cause is unknown (I did not touch `D:\Git`). The Bash tool, which depends on it, stopped working. Reinstalling Git is needed to commit and push.
+2. **Git for Windows disappeared** (reinstalled to `D:\Git` via winget with the installer hash verified): `D:\Git` now contains only `bin\bash.exe` and `usr`, last modified 17:44 today; `cmd\git.exe` and `mingw64` are gone, and GitHub Desktop's bundled git is also missing. The cause is unknown (I did not touch `D:\Git`). The Bash tool, which depends on it, stopped working. Reinstalling Git is needed to commit and push.
 
 ## Next
 
-1. Restore git; commit and push the uncommitted work (the files are listed by `git status` once git works).
-2. Incorporate the independent review findings; fix blockers/majors; re-run all checks.
-3. Measure Lighthouse on `/` and an experiment page; record results verbatim.
-4. Write `DESIGN.md` for Impeccable from the built world; update `TASKS.md`.
-5. Then milestone M4 per `docs/roadmap.md`.
+1. Incorporate the independent review findings; fix blockers/majors; re-run all checks.
+2. Measure Lighthouse on `/` and an experiment page; record results verbatim.
+3. Write `DESIGN.md` for Impeccable from the built world; update `TASKS.md`.
+4. Then milestone M4 per `docs/roadmap.md`.
