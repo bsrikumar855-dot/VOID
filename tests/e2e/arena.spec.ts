@@ -107,6 +107,7 @@ test.describe("Algorithm Arena", () => {
     await page.getByLabel("Right algorithm").selectOption("merge");
     await page.getByLabel("Input data").selectOption("reversed");
     await page.getByLabel("Seed").fill("4242");
+    await page.getByLabel("Seed").press("Enter");
     await expect.poll(async () => page.getByLabel("Share link").inputValue()).toMatch(/#1j\./);
     await page.waitForTimeout(400); // debounced fragment write
     const link = await page.getByLabel("Share link").inputValue();
