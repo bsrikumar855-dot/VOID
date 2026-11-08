@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ExperimentHandle } from "@/engine/public";
@@ -46,6 +46,7 @@ export function ExperimentHost({
   const [url, setUrl] = useState("");
   const [copied, setCopied] = useState<"idle" | "copied" | "failed">("idle");
   const [attempt, setAttempt] = useState(0);
+  const flushRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const def = getExperiment(slug);
@@ -57,17 +58,41 @@ export function ExperimentHost({
     const ac = new AbortController();
     let handle: ExperimentHandle<unknown> | null = null;
 
+    // The configuration the user currently sees; used to restore the share URL if the
+    // fragment is replaced by something else (for example the skip-to-content anchor).
+    let current: unknown = def.defaultConfig;
+
     const writeNow = (config: unknown) => {
-      const href = `${location.pathname}${location.search}#${encodeShare(def, config)}`;
-      history.replaceState(null, "", href);
+      current = config;
+      const next = new URL(location.href);
+      next.hash = encodeShare(def, config);
+      history.replaceState(null, "", next);
       setUrl(location.href);
     };
     // Trailing debounce: painting emits a change per frame; browsers rate-limit replaceState.
     let pending: ReturnType<typeof setTimeout> | undefined;
+    let pendingConfig: unknown;
+    let hasPending = false;
     const writeFragment = (config: unknown, immediate = false) => {
       clearTimeout(pending);
-      if (immediate) writeNow(config);
-      else pending = setTimeout(() => writeNow(config), 150);
+      if (immediate) {
+        hasPending = false;
+        writeNow(config);
+      } else {
+        hasPending = true;
+        pendingConfig = config;
+        pending = setTimeout(() => {
+          hasPending = false;
+          writeNow(config);
+        }, 150);
+      }
+    };
+    // "Copy link" flushes a pending debounced write so it never copies a stale URL.
+    flushRef.current = () => {
+      if (!hasPending) return;
+      clearTimeout(pending);
+      hasPending = false;
+      writeNow(pendingConfig);
     };
 
     const readFragment = (): { config: unknown; error: ShareErrorReason | null } => {
@@ -80,15 +105,17 @@ export function ExperimentHost({
     };
 
     (async () => {
-      const { config, error } = readFragment();
       const mod = await def.load();
       if (ac.signal.aborted) return;
+      // Read the fragment after loading: a hash change that arrived while loading must win.
+      const { config, error } = readFragment();
+      current = config;
       handle = mod.mount(host, {
         config,
         presentation,
         signal: ac.signal,
         onChange: (c: unknown) => {
-          if (shareable) writeFragment(c);
+          if (shareable && !ac.signal.aborted) writeFragment(c);
         },
       });
       handleRef.current = handle;
@@ -101,7 +128,15 @@ export function ExperimentHost({
 
     const onHashChange = () => {
       if (!shareable || !handle) return;
+      // Only fragments that claim to be share links ("#1...") are applied. Anything else
+      // (the skip-to-content anchor, a stray #hash) must not reset the experiment or raise a
+      // false "damaged link" notice: keep the current state and restore its share URL.
+      if (!location.hash.startsWith("#1")) {
+        writeNow(current);
+        return;
+      }
       const { config, error } = readFragment();
+      current = config;
       setNotice(error);
       handle.setConfig(config);
       setUrl(location.href);
@@ -111,6 +146,7 @@ export function ExperimentHost({
     return () => {
       window.removeEventListener("hashchange", onHashChange);
       clearTimeout(pending);
+      flushRef.current = null;
       ac.abort();
       handle?.destroy();
       handleRef.current = null;
@@ -119,6 +155,7 @@ export function ExperimentHost({
 
   const copy = useCallback(async () => {
     try {
+      flushRef.current?.();
       await navigator.clipboard.writeText(location.href);
       setCopied("copied");
     } catch {
