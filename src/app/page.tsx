@@ -4,8 +4,6 @@ import { REPO_URL } from "@/components/layout/site-footer";
 import { encodeShare } from "@/engine/share/codec";
 import { listExperiments } from "@/registry";
 
-const FEATURED_SLUG = "algorithm-arena";
-
 const primaryCta =
   "inline-flex min-h-11 items-center justify-center rounded-control bg-accent px-5 font-semibold text-accent-ink transition-opacity duration-[var(--dur-feedback)] hover:opacity-90";
 const secondaryCta =
@@ -18,7 +16,8 @@ const secondaryCta =
  */
 export default function Home() {
   const experiments = listExperiments();
-  const featured = experiments.find((e) => e.meta.slug === FEATURED_SLUG) ?? experiments[0];
+  // The first registry entry is the featured experiment.
+  const featured = experiments[0];
   const examples = experiments.flatMap((e) =>
     (e.examples ?? []).map((x) => ({
       experiment: e,
@@ -72,18 +71,18 @@ export default function Home() {
         <section aria-labelledby="examples-title" className="border-t border-line bg-surface">
           <div className="mx-auto grid max-w-[1200px] gap-8 px-4 py-14 sm:px-6 lg:grid-cols-12 lg:gap-12 lg:py-20">
             <div className="lg:col-span-4">
-              <h2 id="examples-title" className="text-3xl font-bold tracking-tight">
-                Every setting is in the link
+              <h2 id="examples-title" className="text-3xl font-bold tracking-tight text-balance">
+                Settings and data live in the link
               </h2>
               <p className="mt-4 max-w-[40ch] text-muted">
                 Change an experiment, copy its link, send it. Whoever opens it sees the same
-                settings and the same data, and gets the same results. These three start from
-                interesting races.
+                settings and the same data, and gets the same results. (Playback speed is yours to
+                choose and is not part of the link.) These start from interesting races.
               </p>
             </div>
-            <ol className="m-0 list-none divide-y divide-line border-y border-line p-0 lg:col-span-8">
+            <ul className="m-0 list-none divide-y divide-line border-y border-line p-0 lg:col-span-8">
               {examples.map((x) => (
-                <li key={x.title}>
+                <li key={`${x.experiment.meta.id}:${x.title}`}>
                   <Link
                     href={x.href}
                     className="group grid gap-1 py-5 sm:grid-cols-[1fr_auto] sm:items-baseline sm:gap-8"
@@ -98,45 +97,54 @@ export default function Home() {
                   </Link>
                 </li>
               ))}
-            </ol>
+            </ul>
           </div>
         </section>
       )}
 
       <section
         aria-labelledby="build-title"
-        className="mx-auto grid max-w-[1200px] gap-8 px-4 py-14 sm:px-6 lg:grid-cols-12 lg:gap-12 lg:py-20"
+        className="mx-auto grid max-w-[1200px] gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-20"
       >
-        <div className="lg:col-span-4">
-          <h2 id="build-title" className="text-3xl font-bold tracking-tight">
-            Built in the open, by whoever shows up
+        <div>
+          <h2 id="build-title" className="text-3xl font-bold tracking-tight text-balance">
+            Add an experiment
           </h2>
-        </div>
-        <div className="flex flex-col gap-4 lg:col-span-8">
-          <p className="max-w-[62ch] text-muted">
-            VOID is open source. An experiment is one folder with a manifest, a settings schema, a
-            pure core and a view. Adding one takes a single line in the registry. Everything else
-            (this page, Explore, navigation) picks it up on its own.
-          </p>
-          <p className="max-w-[62ch] text-muted">
-            Not built yet: neural network playground, traffic simulator, agent arena, codebase
-            x-ray, accounts, publishing and remixing. They are on the{" "}
+          <p className="mt-4 max-w-[52ch] text-muted">
+            VOID is open source. Not built yet: neural network playground, traffic simulator, agent
+            arena, codebase x-ray, accounts, publishing and remixing. They are on the{" "}
             <a
               className="text-accent underline underline-offset-4"
               href={`${REPO_URL}/blob/main/docs/roadmap.md`}
               rel="noopener noreferrer"
             >
               roadmap
-            </a>
-            , and they will appear here only once they work.
+            </a>{" "}
+            and will appear here only once they work.
           </p>
+        </div>
+        <div className="flex flex-col gap-5">
+          <ol className="m-0 flex list-decimal flex-col gap-3 pl-5 text-muted marker:text-ink">
+            <li>
+              Create <code className="font-mono text-ink">src/experiments/your-slug/</code> with a
+              manifest, a settings schema, a pure core and a view.
+            </li>
+            <li>
+              Add an import and one entry to the registry. Explore, the example links and the
+              featured hero (the first entry) are derived from it.
+            </li>
+            <li>
+              Run <code className="font-mono text-ink">npm run check</code>. The registry contract
+              tests check your experiment automatically.
+            </li>
+          </ol>
           <p>
             <a
               className={secondaryCta}
               href={`${REPO_URL}/blob/main/CONTRIBUTING.md`}
               rel="noopener noreferrer"
             >
-              How to add an experiment
+              Read the contribution guide
             </a>
           </p>
         </div>
