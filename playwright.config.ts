@@ -2,9 +2,12 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3100;
 
+/** Locally: drive an installed browser, no download. Default Edge; PW_CHANNEL=chrome for Chrome. */
+const LOCAL_CHANNEL = process.env.PW_CHANNEL ?? "msedge";
+
 /**
  * E2E runs against a production build (`npm run build` first, or `npm run test:e2e`).
- * Locally we drive the installed Microsoft Edge (no browser download); in CI,
+ * Locally we drive an installed browser (Edge by default, PW_CHANNEL=chrome for Chrome; no download); in CI,
  * `npx playwright install --with-deps chromium` provides Chromium.
  */
 export default defineConfig({
@@ -22,7 +25,7 @@ export default defineConfig({
       name: "desktop",
       use: {
         ...devices["Desktop Chrome"],
-        ...(process.env.CI ? {} : { channel: "msedge" }),
+        ...(process.env.CI ? {} : { channel: LOCAL_CHANNEL }),
       },
     },
     {
@@ -30,7 +33,7 @@ export default defineConfig({
       use: {
         ...devices["Pixel 7"],
         viewport: { width: 360, height: 740 },
-        ...(process.env.CI ? {} : { channel: "msedge" }),
+        ...(process.env.CI ? {} : { channel: LOCAL_CHANNEL }),
       },
     },
   ],
