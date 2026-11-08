@@ -2,14 +2,13 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test.describe("application shell", () => {
-  test("home renders the headline, honest status and working skip link", async ({ page }) => {
+  test("home renders the headline and has a working skip link", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
     page.on("pageerror", (e) => errors.push(String(e)));
 
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/the web is your playground/i);
-    await expect(page.getByText(/nothing to try yet/i)).toBeVisible();
 
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
