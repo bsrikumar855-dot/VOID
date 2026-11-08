@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored third-party skill files (see docs/decisions); not project source.
+    ".claude/**",
   ]),
 ]);
 
