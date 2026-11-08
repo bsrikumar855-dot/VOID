@@ -3,7 +3,7 @@ export const REPO_URL = "https://github.com/bsrikumar855-dot/VOID";
 export function SiteFooter() {
   return (
     <footer className="border-t border-line">
-      <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-6 font-mono text-sm text-muted sm:px-6">
+      <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-muted sm:px-6">
         <p>VOID · open source · Apache-2.0</p>
         <a
           href={REPO_URL}

@@ -39,7 +39,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-line-strong px-3 font-mono text-sm text-ink transition-colors duration-[var(--dur-feedback)] hover:bg-raised"
+      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-control border border-line-strong px-3 text-sm text-ink transition-colors duration-[var(--dur-feedback)] hover:bg-raised"
       aria-label={`Theme: ${theme}. Switch to ${next} theme`}
     >
       Theme: {theme}
