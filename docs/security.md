@@ -2,6 +2,8 @@
 
 Source: master spec §15, §16. Status: **plan only — nothing here is implemented or verified yet.** Claims of security are made only in `implementation-status.md` after evidence. Method labels follow AUTO-BUILDER's Security gate: *static inspection*, *automated scanning*, *penetration testing* (not performed unless explicitly authorized, and then only against a local disposable target).
 
+> **AMENDED 2026-11-08 by ADR 0002.** T4 (malicious shared configuration) now applies to fragment links `#1j.<base64url>`: raw-length cap, charset check, decoded-size cap, bounded inflate (when `z` is used), fatal UTF-8 decode, guarded `JSON.parse`, strict envelope, route-id match, migration by version, strict Zod schema with a total work cap; failures fall back to defaults with a visible notice; parsed JSON is never merged/spread. T3/T13 CSP is an open M1 spike (nonce-based CSP may force dynamic rendering); until decided, only the other security headers are claimed.
+
 ## 1. Security gate applicability
 
 The Security gate **applies** to VOID (authentication, user content, externally reachable APIs, untrusted URL fetching, AI tools, secrets, uploads/storage). It triggers per milestone: M1 (headers, env validation), M5 (crypto lab labelling), M6 (X-Ray, API Playground, Agent Arena), M7 (auth, RLS), M8 (comments, moderation), M9 (final review).
