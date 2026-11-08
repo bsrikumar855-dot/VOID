@@ -31,5 +31,4 @@ export const algorithmArena = defineExperiment<ArenaConfig>({
       config: { left: "quick", right: "merge", preset: "few-unique", size: 64, seed: 5 },
     },
   ],
-  load: () => import("./view/mount").then((m) => m.default),
 });

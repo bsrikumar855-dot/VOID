@@ -61,8 +61,11 @@ export interface ExperimentDefinition<C = unknown> {
   readonly defaultConfig: C;
   /** Optional curated examples; the homepage and Explore derive links from these. */
   readonly examples?: readonly ExperimentExample<C>[];
-  /** The lazy boundary: heavy code lives behind this import. */
-  load(): Promise<ExperimentModule<C>>;
+  // There is deliberately NO load() here. A manifest that references its view would drag the
+  // view's JavaScript into every server page that imports the registry (found by adding the
+  // second experiment: each experiment added weight to /explore and the homepage). The view is
+  // loaded by CONVENTION instead: the client host imports
+  // `experiments/<slug>/view/mount` and uses its default export, an ExperimentModule.
 }
 
 /**

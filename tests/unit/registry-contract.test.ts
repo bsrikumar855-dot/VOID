@@ -60,8 +60,10 @@ describe.each(experiments.map((e) => [e.meta.slug, e] as const))("experiment %s"
     }
   });
 
-  it("lazy loader resolves to a module with mount()", async () => {
-    const mod = await e.load();
-    expect(typeof mod.mount).toBe("function");
+  it("its view resolves by convention (view/mount default export has mount())", async () => {
+    const mod = (await import(`../../src/experiments/${e.meta.slug}/view/mount.tsx`)) as {
+      default: { mount: unknown };
+    };
+    expect(typeof mod.default.mount).toBe("function");
   });
 });

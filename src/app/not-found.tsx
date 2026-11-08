@@ -7,8 +7,7 @@ export default function NotFound() {
         Page not found
       </h1>
       <p className="mt-4 max-w-[60ch] text-lg text-muted">
-        There is nothing at this address. Links to experiments look like
-        /experiments/algorithm-arena.
+        There is nothing at this address. Every experiment can be opened from Explore.
       </p>
       <p className="mt-8 flex flex-wrap gap-3">
         <Link

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ExperimentHandle } from "@/engine/public";
+import type { ExperimentHandle, ExperimentModule } from "@/engine/public";
 import { decodeShare, encodeShare, type ShareErrorReason } from "@/engine/share/codec";
 import { getExperiment } from "@/registry";
 
@@ -105,7 +105,13 @@ export function ExperimentHost({
     };
 
     (async () => {
-      const mod = await def.load();
+      // Convention-based lazy boundary: each experiment's view is its own chunk, fetched only
+      // when that experiment is shown. Server pages never reference it (see engine/types.ts).
+      const mod = (
+        (await import(`../../experiments/${slug}/view/mount`)) as {
+          default: ExperimentModule<unknown>;
+        }
+      ).default;
       if (ac.signal.aborted) return;
       // Read the fragment after loading: a hash change that arrived while loading must win.
       const { config, error } = readFragment();
