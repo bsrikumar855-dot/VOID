@@ -25,21 +25,43 @@ An experiment lives in its own folder and may import only from `@/engine/public`
 
 ```
 src/experiments/<slug>/
-  manifest.ts     defineExperiment({ meta, configSchema, defaultConfig, examples?, load })
-  config.ts       strict Zod schema; the seed (if any) is part of the config
+  manifest.ts     defineExperiment({ meta, configSchema, defaultConfig, examples? }): server-safe, never references view/
+  limits.ts       numeric limits/constants and the default config: NO runtime imports (see "Keep Zod out of the view")
+  config.ts       strict Zod schema (imports limits.ts); the seed (if any) is part of the config
   core/           pure, deterministic logic: no DOM, no React, no clocks, no Math.random
-  view/           React/Canvas; exports an ExperimentModule with mount(host, options)
+  view/mount.tsx  "use client"; default-exports an ExperimentModule { mount(host, options) }. The host loads it BY CONVENTION
+                  (experiments/<slug>/view/mount), so it is its own lazy chunk and server pages never reference it
 ```
 
 1. Copy `src/experiments/algorithm-arena/` as a starting point and rename it.
-2. Define `config.ts` with `z.strictObject(...)`: bounded integers, array length caps, a seed. Shared links are untrusted input; the schema is the gate.
+2. Define `config.ts` with `z.strictObject(...)`: bounded integers, array length caps, a seed. Shared links are untrusted input; the schema is the gate. Put every constant the view needs in `limits.ts` instead (next section).
 3. Put the logic in `core/` and test it in `tests/unit/` (property tests plus hand-verified golden values; stepping must equal running to the end).
 4. In `view/mount.tsx` (mark it `"use client"`: server pages import the registry, and the module uses `react-dom/client`; wrap your root in `ExperimentErrorBoundary` from `@/engine/public`), return an `ExperimentHandle` (`play`, `pause`, `reset`, `step`, `setConfig`, `destroy`). `destroy()` must be idempotent and release timers, listeners and animation frames. Visible state should be a pure function of `(config, step)`.
 5. Add an import and one entry to `src/registry/index.ts`. Explore, the homepage example links and `/experiments/<slug>` derive from the registry (the first entry is the homepage hero); do not keep another list.
 6. If you add `examples`, every `note` is shown as fact, so test that it is true (see `tests/unit/arena-examples.test.ts`).
 7. Run `npm run check`.
 
-The registry contract test (`tests/unit/registry-contract.test.ts`) automatically checks your experiment: unique slug, valid default config, share-link round trip, loader resolves.
+### Keep Zod out of the view
+
+The view (anything under `view/`, plus `core/`) must not import from `config.ts` at runtime: that file builds the Zod schema, so importing a constant from it ships the whole schema library to every page that can reach your view. Import constants from `limits.ts` and use `import type` for types. `npm run perf:budget` fails if a route with no experiment (`/explore`) ships Zod, and each route has an initial-JavaScript budget.
+
+### Shared building blocks come from the engine
+
+Experiments may not import each other. If two experiments need the same primitive, it moves into `src/engine` and is exported from `@/engine/public`. Today that is the seeded PRNG `mulberry32` (never use `Math.random` in a core), `defineExperiment`, `ExperimentErrorBoundary` and the types.
+
+## The contract, as enforced
+
+You add: your folder, one import and one entry in `src/registry/index.ts`, your own tests. You do not edit any other experiment, the engine, the homepage, Explore or navigation. These checks run for you automatically:
+
+| Check             | Where                                                  | What it proves                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Registry contract | `tests/unit/registry-contract.test.ts`                 | folder is registered, unique id/slug, URL-safe slug, metadata complete, default config valid and round-trips through the share codec, every example valid and round-trips, loader resolves to `mount()`                                                                                                                                                                                                                                                                                            |
+| Import boundaries | ESLint + `tests/integration/lint-boundaries.test.ts`   | experiments import only `@/engine/public` (alias or relative), never each other, never the app shell or registry; `core/` has no React, DOM, clocks, timers or `Math.random`                                                                                                                                                                                                                                                                                                                       |
+| Browser contract  | `tests/e2e/experiments-contract.spec.ts`               | for every experiment: loads with defaults without console errors or DevTools issues; the written share link decodes to the defaults; each curated example opens that exact configuration in a fresh browser; hostile links (garbage, wrong prefix, other experiment, newer version, invalid config with `__proto__`) show a notice and load defaults; skip-link does not disturb the state; axe has no serious/critical violations in dark and light; no horizontal scroll; leave-and-return works |
+| Derived surfaces  | same file                                              | Explore lists exactly the registry; the homepage lists exactly every example of every experiment; the hero is the first entry                                                                                                                                                                                                                                                                                                                                                                      |
+| Bundle budget     | `npm run perf:budget`, `tests/e2e/perf-budget.spec.ts` | initial JavaScript per route within budget; no Zod on `/explore`                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+
+What is **not** automated: whether your experiment is any good, your own core's correctness (write those tests), and screen-reader behaviour.
 
 ## Share links
 

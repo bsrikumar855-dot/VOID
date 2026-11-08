@@ -49,6 +49,19 @@ Honest reading: the user-visible performance change is small because the startin
 ### A correction to an earlier statement
 I told the owner `/explore` "no longer downloads Zod". That is true of the **HTML-referenced (critical-path) scripts** only. Lighthouse's total transfer for `/explore` is unchanged (284 KB vs 282 KB) and its "unused JavaScript" is still ~60 KB, because Next **prefetches** the experiment routes that Explore links to, which pulls in the Zod-bearing chunks. The prefetch is deliberate Next behaviour that makes the likely next click instant, so it stays; the guard test was corrected to assert the critical path, not the whole network.
 
+## Addendum: final results with two experiments and convention-loaded views (ADR 0008)
+
+After experiment #2 was added and manifests stopped referencing their views (so server pages no longer attach experiment view chunks), Lighthouse was re-run on the final build (`docs/perf/two-experiments-mobile.md`: 5 runs per route; `two-experiments-desktop.md`: 3 runs). Mobile medians:
+
+| Route | Perf | TBT | FCP/LCP | TTI | CLS | Best-practices |
+|---|---|---|---|---|---|---|
+| `/` | 100 (100/99/100/100/100) | 76 ms | 765 ms | 2,729 ms | 0 | 100 |
+| `/explore` | 100 | 72 ms | 763 ms | 2,542 ms | 0 | 100 |
+| `/experiments/algorithm-arena` | 100 | 74 ms | 762 ms | 2,720 ms | 0 | 100 |
+| `/experiments/neural-network` | 100 | 81 ms | 760 ms | 2,723 ms | 0 | 100 |
+
+Against the original baseline: Arena performance 99 to 100, time to interactive better on every route (baseline 2,826 to 2,975 ms), blocking time 72 to 81 ms (baseline 68 to 113 ms), and much tighter run-to-run spread (blocking time per run on `/`: 76/127/73/82/76). Desktop: 100 on all four routes, CLS 0.005 / 0 / 0.057 / 0.020 (the Arena's 0.057 remains below 0.1). The convention-loaded hero view did **not** cost an extra round trip in these measurements (hero pages' TTI did not regress). Same caveats as above: one machine, localhost, simulated throttling, Edge.
+
 ## Budgets (see `docs/perf/README.md`)
 
 Lighthouse performance and accessibility targets stay at the spec values (90 / 95) and are met with margin. New enforced budgets: initial JS per route <= 195 KB gzip for routes with no experiment and <= 225 KB for routes that mount one (measured 182 and 214), and no Zod on `/explore`'s critical path. Lighthouse itself is **not yet in CI**.

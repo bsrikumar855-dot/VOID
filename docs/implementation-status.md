@@ -4,95 +4,73 @@ Single human-readable status file. Machine-readable task state lives in `docs/au
 
 Rule: a feature is **Verified** only with evidence (a command that was run and what it showed). Otherwise **Partially verified** or **Untested**. Nothing here is a claim of production readiness or of security.
 
-_Last updated: 2026-11-08, after the first vertical slice and its independent reviews._
+_Last updated: 2026-11-08, end of the second development cycle (performance, architectural validation, experiment #2, hardening)._
 
 ## Current state
 
 | Field | Value |
 |---|---|
-| Phase | First vertical slice (M1 + M2 + M3) built, independently reviewed (ADR 0006), review fixes applied and tested |
+| Phase | Second cycle complete except items listed under "Open". Two experiments, one engine. |
 | Repo | https://github.com/bsrikumar855-dot/VOID, branch `main` |
 | Deployed | No. Nothing is deployed; deployment needs the owner's authorisation. |
-| Blockers | None open. (Git went missing from the machine mid-build and was reinstalled with a hash-verified installer; see "Environment problems".) |
+| GitHub CI / CodeQL | Workflows exist and are pinned; **neither has ever run** (they first run on push). |
 
-## The owner's first-slice definition
+## Experiments
 
-| Item | State | Evidence |
+| Experiment | State | Evidence |
 |---|---|---|
-| Distinctive homepage | **Partially verified** | Inspected as screenshots at 360/768/1280, dark and light; `tests/e2e/home.spec.ts` asserts spec copy and CTAs, live hero, reduced motion, no invented content, real links, no horizontal scroll, headline/canvas non-overlap, axe. "Distinctive" is a judgement that only the lead and the model reviewers have made; no human besides the owner has seen it. Performance unmeasured. |
-| Working experiment registry | **Verified** | `tests/unit/registry-contract.test.ts` (folder-vs-registry, unique ids/slugs, valid defaults, examples, loader resolves). The loader test only checks that `mount` is a function. |
-| One complete interactive experiment | **Verified for the defined subset** | Algorithm Arena = 4 algorithms (bubble, insertion, merge, quick). Core tests: property, golden traces (incl. hand-verified merge trace), stepping == run-to-end; e2e: run/pause/step/reset, shortcuts, painting, completion counters. Spec §4.5 lists ~20 algorithms; the rest are **not built**. |
-| Reusable experiment interface | **Partially verified** | `src/engine/types.ts` + `public.ts`; lint boundaries (alias and relative imports) proven to fire. **Gaps:** "add a second experiment" never exercised (one experiment exists; the real edit is an import plus an entry); `play/pause/reset/step` handle methods are driven only through the UI, never directly; `destroy()` idempotence and `ExperimentErrorBoundary` have no direct test. |
-| Configuration serialization | **Verified** | `tests/unit/share-codec.test.ts` (round trip + 42-case hostile corpus with exact reasons), `tests/unit/security-regressions.test.ts` (4000-case seeded mutation fuzz, deep nesting, max-size bounds). |
-| Working shareable experiment URL | **Verified** | `tests/e2e/arena.spec.ts`: a fresh browser context reproduces settings AND results; painted data survives the round trip; hostile links show a notice and defaults. |
+| Algorithm Arena (4 sorts, race, painting) | Verified for its defined subset | 78+ core tests, e2e, generic contract |
+| Neural Network Playground (forward propagation, step-by-step, editable weights, 4 activations, XOR default) | Verified for its defined scope | `nn-core.test.ts` (hand-verified XOR truth table, two nets cross-checked against independent Python, 300-network layout property test, schema and reshape tests), `nn-examples.test.ts`, generic browser contract |
+| **Not built in experiment #2** | Training / backpropagation / datasets (spec §4.1 "training visualization") | the UI says plainly that no training happens |
 
-## Checks run (final run, 2026-11-08; Windows 11, Node 24.13.1, Edge via Playwright)
+## Extensibility: what was actually proven
+
+Adding experiment #2 required, outside its own folder: one import plus one entry in `src/registry/index.ts`; a shared PRNG moved into the engine's public door (own commit); a generic isolation scan found and removed a hard-coded experiment name in the 404 page. Adding it also exposed a real scalability defect (every page importing the registry carried every experiment's view code); fixed by loading views by convention instead of through the manifest. With a temporary third experiment: `/explore` stayed at 175.7 KB gzipped initial JS and `/` grew 0.2 KB. Details: ADR 0008. **Limits of this proof:** two experiments, both React + Canvas/SVG on the main thread; nothing tests a WebGL, Web Worker or server-backed experiment; the third experiment was a copy.
+
+## Checks run (2026-11-08; Windows 11, Node 24.13.1)
 
 | Check | Result |
 |---|---|
-| `npm run typecheck` | clean |
-| `npm run lint` | clean (includes architecture-boundary rules and `react/no-danger`) |
-| `npm run format:check` | clean |
-| `npx vitest run` | 166 passed (8 files) |
-| `npm run build` | succeeds |
-| `npx playwright test --workers=2` | **112 passed** (desktop and 360px mobile projects; includes axe scans) |
-| `npm audit --omit=dev --audit-level=high` | 0 vulnerabilities (last checked at the CI-file step). `npm audit` overall: 8 moderate in dev lint tooling, not fixed. |
+| `npm run typecheck`, `npm run lint`, `npm run format:check` | clean |
+| `npm run security:secrets` | 153 tracked files, no findings (pattern scan, see ADR 0008) |
+| `npx vitest run` | **232 passed** (12 files) |
+| `npm run build` + `npm run perf:budget` | succeeds; `/` 210.3, `/explore` 175.7, both experiment routes 210.3 KB gzip initial JS (budgets 225 / 195) |
+| `npx playwright test --workers=2` in **Edge** | **192 passed** (desktop and 360px mobile projects) |
+| same in **Chrome** (`PW_CHANNEL=chrome`) | **192 passed** |
+| Lighthouse 13.6.0, final build | mobile performance **100** on `/`, `/explore`, Arena, Neural Network; desktop **100** on all four; accessibility, best-practices, SEO 100 everywhere. Mobile blocking time 72-81 ms, TTI 2.54-2.73 s. Median of 5 (mobile) / 3 (desktop) runs; `docs/perf/two-experiments-*.md` |
+| `npm audit --omit=dev --audit-level=high` | 0 vulnerabilities at last check. Dev-only: moderate findings in lint tooling (not fixed). |
 
-Notes: the default Playwright parallelism (8 workers) crashed browsers once while the C: drive was full; always use `--workers=2` on this machine. E2E runs against a production build only.
+Lighthouse caveats: one machine, localhost, Lighthouse's simulated throttling, Edge, not in CI. The Arena page's desktop CLS is 0.057 (below 0.1). Default Playwright parallelism (8 workers) crashed browsers once while C: was full; always use `--workers=2` here.
 
-**Not run:** Lighthouse itself (a run via `npx lighthouse@latest` was blocked because it would download and execute an unpinned package; it needs the owner's go-ahead or a pinned dev dependency, so the spec's 90+/95+ Lighthouse targets are **unmeasured**; the local probe below is not Lighthouse), cross-browser (only Edge/Chromium), screen-reader testing (**Untested**), real-device mobile, GitHub CI (the workflow file exists but has never run), `/review`, `/qa`, `/ship` gstack workflows, penetration testing or automated security scanning.
+**Not run:** Firefox and WebKit (Firefox is not installed; Playwright's build would need a download that was not approved); any screen reader (checklist in `docs/a11y/screen-reader-checklist.md`, results table empty); real devices and real networks; GitHub CI; CodeQL; penetration testing.
 
-## Local performance probe (not Lighthouse)
+## Performance (ADR 0007)
 
-Measured 2026-11-08 with Playwright + Edge against the production build on localhost, using the browser's own PerformanceObserver APIs (median of 3 fresh-context loads, then 3.5 s for the lazy experiment to mount and run). No network throttling, so real-world numbers will be worse; CPU 4x slowdown for the mobile profile. TBT~ is the sum of long-task time beyond 50 ms, an approximation of Total Blocking Time. Script: not committed (scratch).
+Baseline was already 99-100. Kept: Zod-free `limits.ts` per experiment, Zod `jitless` (removed a CSP eval violation Chrome logged on every page loading Zod: best-practices 96 to 100), the bundle budget script and guards. Rejected with evidence: Next's experimental `inlineCss` (regressed mobile first paint and blocking time) and a lazy registry import (experiment pages became interactive ~400 ms later). Correction recorded: `/explore`'s critical path is Zod-free, but Next still prefetches the experiment routes it links to, so the network sees those chunks.
 
-| Profile | Route | FCP = LCP | CLS | TBT~ | JS (compressed) |
-|---|---|---|---|---|---|
-| 360px, 4x CPU | `/` | 284 ms | 0.000 | 301 ms (3 long tasks) | 181 KB / 11 files |
-| 360px, 4x CPU | `/experiments/algorithm-arena` | 220 ms | 0.000 | 258 ms (4) | 181 KB / 11 files |
-| 360px, 4x CPU | `/explore` | 244 ms | 0.000 | 167 ms (1) | 181 KB / 11 files |
-| 1280px | `/` | 100 ms | 0.002 | 0 ms | 181 KB / 11 files |
-| 1280px | `/experiments/algorithm-arena` | 112 ms | 0.000 | 0 ms | 181 KB / 11 files |
-| 1280px | `/explore` | 104 ms | 0.000 | 0 ms | 181 KB / 11 files |
+## Reviews
 
-What this does and does not show: the headline is the LCP element and paints fast; the hero placeholder causes no measurable layout shift. **Concerns:** blocking time on the throttled mobile profile (167-301 ms) is near or above the 200 ms "good" bound; the identical 181 KB / 11 files on every route, including `/explore` which has no experiment, suggests prefetching or shared chunks that have not been analysed (a bundle analysis is needed before claiming code-splitting works). Not measured: real network, real devices, INP, Lighthouse scoring, other browsers.
-
-## Independent reviews (ADR 0006)
-
-Three read-only model reviewers (QA, security, critical) read the code and tests; none could run anything. Security: **no known confirmed Critical, High or Medium findings in the reviewed scope** (static inspection only; transitive CVEs, deployment headers and non-Chromium browsers not reviewed). Their defects were fixed with regression tests (list in ADR 0006). Open items they raised are listed there and below.
-
-## Milestones
-
-| ID | Milestone | State |
-|---|---|---|
-| M0 | Foundation and discovery | Done (spec, docs, reduced-form gstack reviews, ADRs 0001-0006, roadmap) |
-| M1 | Application foundation | Done |
-| M2 | Engine + Algorithm Arena + share links | Done |
-| M3 | Homepage + Explore + CONTRIBUTING | Done. **Terminal not built** (spec §10; outside the owner's slice) |
-| M4 onward | Neural network, Glitch Lab, Systems, AI Arena, X-Ray, accounts, community, hardening | Not started |
+Independent QA, security and critical reviews of the first slice (read-only model agents that could not run code): no known confirmed Critical, High or Medium security findings in the reviewed scope; defects fixed with regression tests (ADR 0006). The second cycle was reviewed by the lead only: **no independent review of the Neural Network experiment, the convention-loading refactor or the Phase 4 files has taken place.**
 
 ## Known gaps and honest limitations
 
-- **Terminal** (spec §10, acceptance #4) not built; the design docs' header Terminal trigger was dropped (ADR 0006).
-- Spec §4.5 breadth (searching, graphs, data structures, scheduling) not built.
-- Painting data needs a pointer; the data/size/seed controls are the keyboard path.
-- Share links carry no per-config preview image (ADR 0002); "Private/Publish" do not exist (M7).
-- CSP allows `'unsafe-inline'` scripts (ADR 0004): not a strong XSS defence; revisit before M7.
-- `partialPrefetching: false` is a temporary pin (ADR 0005).
-- Impeccable's launcher, hook and image comps not run; `DESIGN.md` in Impeccable's format is not written yet. `PRODUCT.md` is.
-- No analytics, so none of the spec §24 metrics are measured.
-- Test-suite gaps: several fixed sleeps in e2e; no test of the load-failure UI, the error boundary, direct handle methods, or theme-change canvas redraw; only production-build e2e.
-- Security hygiene still open: actions pinned by tag not SHA; no secret-scan job; no CodeQL; HSTS left to the host.
-- Layout shift from the hero placeholder (34rem) is unmeasured.
+- Terminal (spec §10) not built; spec §4.5 breadth beyond four sorts not built; no neural-network training.
+- CSP still allows inline scripts (ADR 0004): not a strong XSS defence; revisit before accounts (M7).
+- Security hygiene: CodeQL and the pinned workflows are unproven until they run; secret scanning is a pattern scan (enable GitHub secret scanning and push protection in repository settings, an owner action); HSTS left to the host.
+- The Arena still has its own copy of the PRNG (the engine exports one); deduplicating it would modify an unrelated experiment.
+- Painting data in the Arena needs a pointer; the data/size/seed controls are the keyboard path.
+- Neural Network diagram needs a horizontal scroll region on phones (readable size over a squeezed overview).
+- Test-suite gaps carried over: some fixed sleeps in e2e; no test of the load-failure UI or the error boundaries; production-build e2e only.
+- Impeccable's launcher/hook/comps still not run; `DESIGN.md` in its format not written.
+- No analytics, so no spec §24 metrics.
 
-## Environment problems found during this build
+## Environment problems found during this work
 
-1. **C: drive hit 0 GB free** midway through (ENOSPC, browser crashes). I deleted two of my own scratch folders to recover; the rest of what fills C: is not mine. Re-check free space before long runs.
-2. **Git for Windows disappeared** (`D:\Git` left with only `bin\bash.exe` and `usr`, modified 17:44; GitHub Desktop's bundled git also gone). Cause unknown; I did not touch that folder. Reinstalled to `D:\Git` via winget (Git 2.56.0.4, installer SHA-256 verified by winget). The harness's Bash tool still reports a stale shell path, so PowerShell is used for git.
+C: drive ran out of space earlier (recovered; ~2.4 GB free now, npm cache for the Lighthouse install redirected to D:). Git for Windows disappeared mid-session (reinstalled to `D:\Git`, installer hash verified by winget); the harness Bash tool still reports a stale shell path, so PowerShell is used. PowerShell's `Set-Content -Encoding UTF8` added a BOM to four files; stripped in a dedicated commit, and edits since use Python instead.
 
-## Next
+## Open / next
 
-1. Run Lighthouse properly (owner go-ahead or a pinned dev dependency) and analyse the bundle: why every route ships 181 KB, and the mobile blocking time.
-2. Write `DESIGN.md` for Impeccable from the built world.
-3. Build experiment #2 (Neural Network Playground, per ADR 0002) on the engine, which also proves the "add one folder" claim; then Glitch Lab. Terminal when scheduled by the owner.
-4. Close the open test and security-hygiene items above.
+1. Push, then read the first GitHub CI and CodeQL results and fix whatever they find.
+2. Owner actions: approve a Firefox test download; enable GitHub secret scanning and push protection; run the screen-reader checklist (or approve another approach).
+3. Independent review of the second cycle (`/review`, `/qa` equivalents once git/bash tooling works, or the read-only agents again).
+4. Experiment #3 (Glitch Lab) is the right next test of the engine: it brings canvas/WebGL performance, `prefers-reduced-motion` and image export; Terminal when the owner schedules it.

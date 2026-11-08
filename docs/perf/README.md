@@ -31,5 +31,6 @@ CI does **not** run Lighthouse yet (it is slow and noisy on shared runners); the
 
 - `before.md`: baseline before the optimisation work (2026-11-08).
 - `after-final-mobile.md`, `after-final-desktop.md`: the adopted configuration (5 mobile runs, 3 desktop runs per route).
+- `two-experiments-mobile.md`, `two-experiments-desktop.md`: the final build with two experiments and convention-loaded views (supersede `after-final-*` as the current numbers).
 - `after-all-changes.md`, `ab-no-inlinecss.md`: rejected variants kept as evidence.
 - The decision record with the comparison tables and the honest reading: `docs/decisions/0007-performance-audit-and-optimisation.md`.
