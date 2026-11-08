@@ -14,5 +14,5 @@ export const algorithmArena = defineExperiment<ArenaConfig>({
   },
   configSchema: arenaConfigSchema,
   defaultConfig: defaultArenaConfig,
-  load: () => import("./view/mount"),
+  load: () => import("./view/mount").then((m) => m.default),
 });

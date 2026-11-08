@@ -21,6 +21,11 @@ export interface ExperimentMeta {
 
 export interface MountOptions<C> {
   config: C;
+  /**
+   * "page": the full experience with all controls and explanation.
+   * "embed": compact, self-running presentation (e.g. the homepage hero).
+   */
+  presentation?: "page" | "embed";
   /** Aborted when the host unmounts; handles must also be safe to destroy() directly. */
   signal: AbortSignal;
   /** Called when the user changes the configuration inside the experiment. */
