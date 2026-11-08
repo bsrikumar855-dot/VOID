@@ -1,4 +1,4 @@
-﻿# VOID — Implementation Status
+# VOID — Implementation Status
 
 Single human-readable status file. Machine-readable task state lives in `docs/auto-builder/TASKS.md` (AUTO-BUILDER's source of truth); if they disagree, `TASKS.md` wins and this file is stale.
 
