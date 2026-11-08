@@ -14,7 +14,7 @@ VOID is open source (Apache-2.0). The easiest meaningful contribution is a new e
 ```bash
 npm install
 npm run dev            # http://localhost:3000
-npm run check          # typecheck, lint, unit tests, build, end-to-end tests
+npm run check          # typecheck, lint, unit tests, build, end-to-end tests (CI also runs `npm run format:check`)
 ```
 
 End-to-end tests drive Microsoft Edge locally (no download). In CI they use Chromium via `npx playwright install --with-deps chromium`.
@@ -34,8 +34,8 @@ src/experiments/<slug>/
 1. Copy `src/experiments/algorithm-arena/` as a starting point and rename it.
 2. Define `config.ts` with `z.strictObject(...)`: bounded integers, array length caps, a seed. Shared links are untrusted input; the schema is the gate.
 3. Put the logic in `core/` and test it in `tests/unit/` (property tests plus hand-verified golden values; stepping must equal running to the end).
-4. In `view/mount.tsx`, return an `ExperimentHandle` (`play`, `pause`, `reset`, `step`, `setConfig`, `destroy`). `destroy()` must be idempotent and release timers, listeners and animation frames. Visible state should be a pure function of `(config, step)`.
-5. Add **one line** to `src/registry/index.ts`. Home, Explore and navigation derive from the registry; do not keep another list.
+4. In `view/mount.tsx` (mark it `"use client"`: server pages import the registry, and the module uses `react-dom/client`; wrap your root in `ExperimentErrorBoundary` from `@/engine/public`), return an `ExperimentHandle` (`play`, `pause`, `reset`, `step`, `setConfig`, `destroy`). `destroy()` must be idempotent and release timers, listeners and animation frames. Visible state should be a pure function of `(config, step)`.
+5. Add an import and one entry to `src/registry/index.ts`. Explore, the homepage example links and `/experiments/<slug>` derive from the registry (the first entry is the homepage hero); do not keep another list.
 6. If you add `examples`, every `note` is shown as fact, so test that it is true (see `tests/unit/arena-examples.test.ts`).
 7. Run `npm run check`.
 
