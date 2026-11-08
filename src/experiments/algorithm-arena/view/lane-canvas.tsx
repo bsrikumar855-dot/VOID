@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Op } from "../core/sorts";
-import { drawLane, type LaneColors } from "./draw";
+import { TOP_MARGIN, drawLane, type LaneColors } from "./draw";
 
 function readColors(): LaneColors {
   const cs = getComputedStyle(document.documentElement);
@@ -12,7 +12,6 @@ function readColors(): LaneColors {
     compare: get("--accent"),
     write: get("--text"),
     done: get("--accent-2"),
-    line: get("--border-strong"),
   };
 }
 
@@ -95,7 +94,9 @@ export function LaneCanvas({
     const r = e.currentTarget.getBoundingClientRect();
     const n = array.length;
     const index = Math.min(n - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * n)));
-    const frac = 1 - (e.clientY - r.top) / r.height;
+    // Bars are drawn inside the plot area (below TOP_MARGIN), so map the pointer into it.
+    const plotH = Math.max(1, r.height - TOP_MARGIN);
+    const frac = Math.min(1, Math.max(0, (r.height - (e.clientY - r.top)) / plotH));
     const value = Math.max(1, Math.round(frac * maxValue));
     onPaint(index, value);
   };
@@ -124,6 +125,7 @@ export function LaneCanvas({
         }
       }}
       onPointerCancel={() => {
+        if (painting.current) onPaintEnd?.();
         painting.current = false;
       }}
     />

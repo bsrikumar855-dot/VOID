@@ -2,7 +2,12 @@
 
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import type { ExperimentHandle, ExperimentModule, MountOptions } from "@/engine/public";
+import {
+  ExperimentErrorBoundary,
+  type ExperimentHandle,
+  type ExperimentModule,
+  type MountOptions,
+} from "@/engine/public";
 import type { ArenaConfig } from "../config";
 import { Arena, type ArenaControls } from "./arena";
 
@@ -21,14 +26,16 @@ function mount(
 
   flushSync(() => {
     root.render(
-      <Arena
-        initialConfig={options.config}
-        presentation={options.presentation ?? "page"}
-        onChange={options.onChange}
-        register={(c) => {
-          controls = c;
-        }}
-      />,
+      <ExperimentErrorBoundary>
+        <Arena
+          initialConfig={options.config}
+          presentation={options.presentation ?? "page"}
+          onChange={options.onChange}
+          register={(c) => {
+            controls = c;
+          }}
+        />
+      </ExperimentErrorBoundary>,
     );
   });
 
@@ -36,7 +43,9 @@ function mount(
     if (destroyed) return;
     destroyed = true;
     controls = null;
-    root.unmount();
+    // Deferred: destroy() can run inside a React effect cleanup, and React warns about
+    // unmounting a root synchronously while it is already rendering/committing.
+    queueMicrotask(() => root.unmount());
   };
   options.signal.addEventListener("abort", destroy, { once: true });
   if (options.signal.aborted) destroy();

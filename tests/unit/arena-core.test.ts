@@ -138,6 +138,24 @@ describe("golden traces and counters (hand-verified)", () => {
     expect(trace[trace.length - 1]).toEqual({ t: "set", i: 1, v: 2 });
   });
 
+  it("merge on [3,1,2]: compares live-array positions, then copies back (hand-verified)", () => {
+    // sort(0,1): cmp(0,1) takes 1, then 3 -> writes [1,3]. sort(0,2): cmp(0,2) takes 1,
+    // cmp(1,2) takes 2, then 3 -> writes [1,2,3]. Compared indices always point at the
+    // values actually compared because the live array is untouched until the copy-back.
+    const { trace, sorted } = runSort("merge", [3, 1, 2]);
+    expect(sorted).toEqual([1, 2, 3]);
+    expect(trace).toEqual([
+      { t: "cmp", i: 0, j: 1 },
+      { t: "set", i: 0, v: 1 },
+      { t: "set", i: 1, v: 3 },
+      { t: "cmp", i: 0, j: 2 },
+      { t: "cmp", i: 1, j: 2 },
+      { t: "set", i: 0, v: 1 },
+      { t: "set", i: 1, v: 2 },
+      { t: "set", i: 2, v: 3 },
+    ]);
+  });
+
   it("quick on [3,1,2]: pivot is the last item (fixed rule)", () => {
     const { trace, sorted } = runSort("quick", [3, 1, 2]);
     expect(sorted).toEqual([1, 2, 3]);

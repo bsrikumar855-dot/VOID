@@ -41,10 +41,17 @@ function subscribeReduced(cb: () => void) {
 const getReduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const control =
-  "min-h-11 rounded-control border border-line-strong bg-surface px-3 text-ink transition-colors duration-[var(--dur-feedback)] hover:bg-raised disabled:opacity-50";
+  "min-h-11 rounded-control border border-line-strong bg-surface px-3 text-ink transition-colors duration-[var(--dur-feedback)] hover:bg-raised disabled:opacity-50 aria-disabled:opacity-50";
 const button = `${control} inline-flex items-center justify-center font-medium`;
 
 const nameOf = (id: AlgorithmId) => ALGORITHM_INFO[id].name;
+
+const PRESET_LABELS: Record<(typeof PRESETS)[number], string> = {
+  random: "Random",
+  reversed: "Reversed",
+  "nearly-sorted": "Nearly sorted",
+  "few-unique": "Few unique values",
+};
 
 function summarize(
   r: { left: { trace: unknown[] }; right: { trace: unknown[] } },
@@ -165,6 +172,8 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
   // Keyboard shortcuts on the whole experiment (page presentation).
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (embed) return;
+    // Never steal browser shortcuts such as Ctrl+R (reload) or Ctrl+S (save).
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     const tag = (e.target as HTMLElement).tagName;
     if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
     if (e.key === "s" || e.key === "S") {
@@ -194,8 +203,17 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
     }
   };
   const onPaintEnd = () => {
+    // Flush the last sample of the stroke so it is not dropped, then end the stroke.
+    if (paintRaf.current) {
+      cancelAnimationFrame(paintRaf.current);
+      paintRaf.current = 0;
+    }
+    const values = paintRef.current;
     paintRef.current = null;
+    if (values) commit({ ...config, size: values.length, values: values.slice() });
   };
+  // A pending paint frame must not fire after unmount (it would write a stale share link).
+  useEffect(() => () => cancelAnimationFrame(paintRaf.current), []);
 
   const set = (patch: Partial<ArenaConfig>) => {
     const next = { ...config, ...patch };
@@ -215,8 +233,9 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
 
   return (
     <div ref={rootRef} onKeyDown={onKeyDown} className="flex flex-col gap-6">
+      {/* The self-running hero must not chatter at screen readers every few seconds. */}
       <p className="sr-only" aria-live="polite" role="status">
-        {liveText}
+        {embed ? "" : liveText}
       </p>
 
       <div className={embed ? "grid gap-4" : "grid gap-6 md:grid-cols-2"}>
@@ -235,8 +254,9 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
               done={view.done}
               label={laneLabel(id, view)}
               className={`block w-full rounded-panel border border-line bg-surface ${embed ? "h-32 sm:h-40" : "h-48 sm:h-64"}`}
-              onPaint={key === "left" ? onPaint : undefined}
-              onPaintEnd={key === "left" ? onPaintEnd : undefined}
+              // Painting is page-only: on the hero it would trap touch scrolling on phones.
+              onPaint={key === "left" && !embed ? onPaint : undefined}
+              onPaintEnd={key === "left" && !embed ? onPaintEnd : undefined}
             />
             <dl className="m-0 grid grid-cols-3 gap-2 text-sm">
               {(
@@ -279,9 +299,11 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
             <button
               type="button"
               className={button}
-              disabled={finished}
+              // aria-disabled (not disabled) so keyboard focus is not lost at the last step.
+              aria-disabled={finished}
               aria-keyshortcuts="S"
               onClick={() => {
+                if (finished) return;
                 setPlaying(false);
                 setStep((s) => Math.min(race.length, s + 1));
               }}
@@ -361,7 +383,7 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
               {config.values && <option value="custom">Painted by you</option>}
               {PRESETS.map((p) => (
                 <option key={p} value={p}>
-                  {p.replace("-", " ")}
+                  {PRESET_LABELS[p]}
                 </option>
               ))}
             </select>
@@ -379,16 +401,30 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
           </Field>
           <Field label="Seed" id={`${uid}-seed`}>
             <div className="flex gap-2">
+              {/* Uncontrolled and applied on blur/Enter so clearing the field while typing
+                  does not reset the race to seed 0. Re-keyed when the seed changes elsewhere. */}
               <input
                 id={`${uid}-seed`}
+                key={config.seed}
                 type="number"
                 inputMode="numeric"
                 min={0}
                 max={4294967295}
-                value={config.seed}
-                onChange={(e) => {
+                defaultValue={config.seed}
+                onBlur={(e) => {
                   const n = Number(e.target.value);
-                  if (Number.isInteger(n) && n >= 0 && n <= 0xffffffff) set({ seed: n });
+                  if (
+                    e.target.value !== "" &&
+                    Number.isInteger(n) &&
+                    n >= 0 &&
+                    n <= 0xffffffff &&
+                    n !== config.seed
+                  ) {
+                    set({ seed: n });
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
                 }}
                 className={`${control} w-full font-mono tabular-nums`}
               />
@@ -397,7 +433,7 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
                 className={button}
                 onClick={() => set({ seed: (config.seed + 1) >>> 0 })}
               >
-                Next
+                Next seed
               </button>
             </div>
           </Field>
@@ -407,10 +443,11 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
       {!embed && (
         <div className="flex flex-col gap-3">
           <p className="max-w-[65ch] text-sm text-muted">
-            Draw on the left chart with a mouse or finger to paint your own data. The same settings
-            are available from the controls above. Shortcuts: <kbd>S</kbd> step, <kbd>R</kbd> reset.
-            Legend: a bracket above two bars means they are being compared, a dot means a swap or
-            write, and a solid rule under green bars means sorted.
+            Draw on the left chart with a mouse or finger to paint your own data (painting needs a
+            pointer; the data, size and seed controls above work from the keyboard). Shortcuts:{" "}
+            <kbd>S</kbd> step, <kbd>R</kbd> reset. Legend: a bracket above two bars means they are
+            being compared, a dot means a swap or write, and a solid rule under green bars means
+            sorted.
           </p>
           <button
             type="button"
@@ -517,9 +554,10 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
             ))}
           </ul>
           <p className="max-w-[65ch] text-sm text-muted">
-            Both algorithms advance one operation per tick on identical data, so the one with fewer
-            operations finishes first. Counters come from the recorded operation trace of each run,
-            not from timing.
+            Both algorithms work through the same number of recorded operations at a time on
+            identical data, so the one with fewer operations finishes first. At fast speeds several
+            operations happen between drawn frames; the counters always include all of them and come
+            from the recorded operation trace, not from timing.
           </p>
         </section>
       )}

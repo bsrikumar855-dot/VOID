@@ -5,7 +5,6 @@ export interface LaneColors {
   compare: string;
   write: string;
   done: string;
-  line: string;
 }
 
 export interface LaneDrawInput {
@@ -19,7 +18,7 @@ export interface LaneDrawInput {
   colors: LaneColors;
 }
 
-const TOP_MARGIN = 14;
+export const TOP_MARGIN = 14;
 
 /**
  * Draws one lane. State is encoded without relying on colour alone (WCAG 1.4.1):

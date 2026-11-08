@@ -7,7 +7,7 @@ export const algorithmArena = defineExperiment<ArenaConfig>({
     slug: "algorithm-arena",
     title: "Algorithm Arena",
     summary:
-      "Race two sorting algorithms on identical data and watch every comparison, swap and write.",
+      "Race two sorting algorithms on identical data and see how many comparisons, swaps and writes each one needs.",
     category: "Algorithms",
     tags: ["sorting", "complexity", "comparison"],
     version: 1,

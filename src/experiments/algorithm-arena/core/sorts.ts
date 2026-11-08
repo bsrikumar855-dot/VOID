@@ -37,7 +37,7 @@ export const ALGORITHM_INFO: Record<
     best: "O(n log n)",
     average: "O(n log n)",
     worst: "O(n log n)",
-    note: "Splits in half, sorts each half, then merges. Uses extra space; shown as writes. Highlighted bars mark the two run heads being compared, positions taken from the run snapshot.",
+    note: "Splits in half, sorts each half, then merges. Uses extra space: each merged item is copied back as a write. A bracket marks the two items at the front of the runs being merged.",
   },
   quick: {
     name: "Quick sort",
@@ -85,26 +85,26 @@ function insertion(a: number[], emit: Tracer): void {
 }
 
 function merge(a: number[], emit: Tracer): void {
-  const aux = a.slice();
   const sort = (lo: number, hi: number): void => {
     if (hi - lo < 1) return;
     const mid = (lo + hi) >> 1;
     sort(lo, mid);
     sort(mid + 1, hi);
-    for (let k = lo; k <= hi; k++) aux[k] = a[k];
+    // Merge into a temporary output while the live array is untouched, so every compared
+    // index points at the value actually compared. Then copy back, one traced write each.
+    const out: number[] = [];
     let i = lo;
     let j = mid + 1;
-    for (let k = lo; k <= hi; k++) {
-      let take: number;
-      if (i > mid) take = j++;
-      else if (j > hi) take = i++;
-      else {
-        // Compare the two candidates at their positions in the snapshot copy.
-        emit({ t: "cmp", i, j });
-        take = aux[j] < aux[i] ? j++ : i++;
-      }
-      a[k] = aux[take];
-      emit({ t: "set", i: k, v: aux[take] });
+    while (i <= mid && j <= hi) {
+      emit({ t: "cmp", i, j });
+      if (a[j] < a[i]) out.push(a[j++]);
+      else out.push(a[i++]);
+    }
+    while (i <= mid) out.push(a[i++]);
+    while (j <= hi) out.push(a[j++]);
+    for (let k = 0; k < out.length; k++) {
+      a[lo + k] = out[k];
+      emit({ t: "set", i: lo + k, v: out[k] });
     }
   };
   sort(0, a.length - 1);
