@@ -83,7 +83,8 @@ export function Arena({ initialConfig, presentation, onChange, register }: Props
   useEffect(() => {
     stateRef.current = { config, race, step, onChange };
   });
-  const running = playing && !finished && !(embed && reduced);
+  // Reduced motion only suppresses AUTOPLAY (initial state); a user pressing Run still runs.
+  const running = playing && !finished;
   const liveText = finished && race.length > 0 ? summarize(race, config) : announcement;
 
   const commit = useCallback((next: ArenaConfig) => {
