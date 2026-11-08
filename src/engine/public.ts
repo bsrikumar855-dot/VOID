@@ -5,6 +5,7 @@
 export type {
   AnyExperimentDefinition,
   ExperimentDefinition,
+  ExperimentExample,
   ExperimentHandle,
   ExperimentMeta,
   ExperimentModule,

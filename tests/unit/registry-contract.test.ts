@@ -51,6 +51,15 @@ describe.each(experiments.map((e) => [e.meta.slug, e] as const))("experiment %s"
     });
   });
 
+  it("every curated example is a valid config and round-trips through the codec", () => {
+    for (const x of e.examples ?? []) {
+      expect(x.title.length).toBeGreaterThan(0);
+      expect(x.note.length).toBeGreaterThan(10);
+      expect(e.configSchema.safeParse(x.config).success).toBe(true);
+      expect(decodeShare(encodeShare(e, x.config), e)).toEqual({ ok: true, config: x.config });
+    }
+  });
+
   it("lazy loader resolves to a module with mount()", async () => {
     const mod = await e.load();
     expect(typeof mod.mount).toBe("function");

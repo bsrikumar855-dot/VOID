@@ -48,11 +48,21 @@ export interface ExperimentModule<C> {
   mount(host: HTMLElement, options: MountOptions<C>): ExperimentHandle<C>;
 }
 
+/** A curated, real starting point: a named configuration someone can open as a link. */
+export interface ExperimentExample<C> {
+  readonly title: string;
+  /** What to watch for. Must be literally true; experiments test their own claims. */
+  readonly note: string;
+  readonly config: C;
+}
+
 export interface ExperimentDefinition<C = unknown> {
   readonly meta: ExperimentMeta;
   /** Strict schema. The seed (if any) is part of the config. */
   readonly configSchema: ZodType<C>;
   readonly defaultConfig: C;
+  /** Optional curated examples; the homepage and Explore derive links from these. */
+  readonly examples?: readonly ExperimentExample<C>[];
   /** The lazy boundary: heavy code lives behind this import. */
   load(): Promise<ExperimentModule<C>>;
 }
