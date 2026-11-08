@@ -1,3 +1,4 @@
+import "@/engine/zod-config"; // must be first: sets Zod's jitless flag before any schema is built
 import type { AnyExperimentDefinition } from "@/engine/public";
 import { algorithmArena } from "@/experiments/algorithm-arena/manifest";
 

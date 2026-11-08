@@ -1,3 +1,4 @@
+import "../zod-config"; // must be first: sets Zod's jitless flag before schemas are built
 import { z } from "zod";
 import type { ExperimentDefinition } from "../types";
 
