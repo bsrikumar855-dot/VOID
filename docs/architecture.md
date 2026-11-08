@@ -2,6 +2,8 @@
 
 Source: master spec §6, §13–§15, §17, §22. Status: **draft for review by `/plan-eng-review`; no code exists.** Versions below are *intentions*; exact versions are verified against the registry at M1 and recorded in `docs/decisions/`.
 
+> **AMENDED 2026-11-08 by ADR 0002.** Where this draft and `docs/decisions/0002-*.md` disagree, ADR 0002 wins. Key changes: (1) section 4 engine contract is replaced by the minimal `ExperimentDefinition`/`ExperimentHandle` pair, with no lifecycle state machine, no `restore`/`serialize` of internal state and no `ctx` services; (2) share URLs use the **URL fragment** `#1j.<base64url>` with a 10-step validation order, not `?c=`; (3) experiments live in `src/experiments/<slug>/{manifest,config,core,view}` and the registry is the single list; (4) Three/R3F/GSAP/Motion/D3/Zustand/Hook Form/shadcn are deferred out of the first slice. Sections 2, 3 and 4 below are kept for history and are superseded where they conflict.
+
 ## 1. Principles
 
 1. The **experiment engine** is the single abstraction. Experiments are plugins registered against it, never standalone pages with duplicated logic (§6).
