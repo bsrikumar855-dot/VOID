@@ -12,7 +12,9 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:e2e"
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run perf:budget && npm run test:e2e",
+    "perf": "node scripts/perf/lighthouse.mjs",
+    "perf:budget": "node scripts/perf/budget.mjs"
   },
   "dependencies": {
     "next": "16.4.5",
@@ -29,6 +31,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
+    "lighthouse": "13.6.0",
     "prettier": "^3.9.10",
     "tailwindcss": "^4",
     "typescript": "^5",
