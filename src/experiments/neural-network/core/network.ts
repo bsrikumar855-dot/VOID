@@ -130,11 +130,10 @@ export function forward(net: Net): ForwardResult {
     const zs: number[] = [];
     for (let t = 0; t < net.sizes[l + 1]; t++) {
       const terms = prev.map((a, f) => ({ from: f, w: net.weights[l][t][f], a }));
-      let z = net.biases[l][t];
       // Fixed summation order (inputs first, bias last) keeps results reproducible.
       let sum = 0;
       for (const term of terms) sum += term.w * term.a;
-      z = sum + net.biases[l][t];
+      const z = sum + net.biases[l][t];
       const out = activate(net.activations[l], z);
       zs.push(z);
       outs.push(out);
@@ -200,9 +199,15 @@ export function predict(outputs: readonly number[], activation: ActivationId): P
   let summary: string;
   if (outputs.length === 1) {
     const v = outputs[0];
+    const side =
+      v > 0.5
+        ? 'above 0.5, so the network says "yes" (1)'
+        : v < 0.5
+          ? 'below 0.5, so the network says "no" (0)'
+          : 'exactly 0.5, right on the boundary; by convention that counts as "yes" (1)';
     summary =
       activation === "sigmoid"
-        ? `Output ${fmt(v)}: read as a probability, ${v >= 0.5 ? "above" : "below"} 0.5, so the network says "yes" ${v >= 0.5 ? "(1)" : "(0)"}.`
+        ? `Output ${fmt(v)}: read as a probability, ${side}.`
         : `Output ${fmt(v)}. With a ${ACTIVATION_INFO[activation].name} output this is a plain number, not a probability.`;
   } else {
     summary = `Outputs ${outputs.map(fmt).join(", ")}. The largest is output ${best + 1}, so that is the network's pick.`;
@@ -238,10 +243,19 @@ export function randomParams(inputCount: number, sizes: readonly number[], seed:
  * Change the architecture while keeping every parameter whose position still exists
  * (same layer, same neuron, same input). New positions get seeded small random weights and
  * zero biases, so editing the shape never throws away work the user has done.
+ *
+ * `from[l]` names which OLD layer new layer `l` continues (`null` for a brand-new layer).
+ * Without it layers are matched by index, which is right for resizing and activation edits
+ * but wrong after inserting or removing a layer (everything after it would shift), so the
+ * view passes `from` for those two edits.
  */
 export function reshape(
   config: NnConfig,
-  next: { inputCount: number; layers: NnConfig["layers"] },
+  next: {
+    inputCount: number;
+    layers: NnConfig["layers"];
+    from?: ReadonlyArray<number | null>;
+  },
 ): NnConfig {
   const inputCount = clamp(next.inputCount, 1, MAX_INPUTS);
   const layers = next.layers.slice(0, MAX_LAYERS).map((l) => ({
@@ -253,16 +267,19 @@ export function reshape(
   const w: number[] = [];
   const b: number[] = [];
   let prev = inputCount;
+  const sourceOf = (l: number): number | null =>
+    next.from && next.from.length === layers.length ? (next.from[l] ?? null) : l;
   for (let l = 0; l < layers.length; l++) {
     const to = layers[l].size;
+    const src = sourceOf(l);
     for (let t = 0; t < to; t++) {
       for (let f = 0; f < prev; f++) {
-        const kept = old.weights[l]?.[t]?.[f];
+        const kept = src === null ? undefined : old.weights[src]?.[t]?.[f];
         w.push(kept !== undefined ? Math.round(kept * SCALE) : randomValue(rand, prev, to));
       }
     }
     for (let t = 0; t < to; t++) {
-      const kept = old.biases[l]?.[t];
+      const kept = src === null ? undefined : old.biases[src]?.[t];
       b.push(kept !== undefined ? Math.round(kept * SCALE) : 0);
     }
     prev = to;

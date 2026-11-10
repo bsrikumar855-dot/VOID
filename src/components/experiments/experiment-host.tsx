@@ -21,6 +21,27 @@ const REASON_TEXT: Record<ShareErrorReason, string> = {
   "invalid-config": "This link's settings are not valid for this experiment.",
 };
 
+/**
+ * Does this fragment claim to be a share link ("#<version><format>.<payload>", for example
+ * "#1j.…")? One predicate for the first load and for later hash changes, so a stray anchor such
+ * as "#main" never raises a false "damaged link" notice, while a link from another version
+ * still reaches the codec and gets its specific message.
+ */
+const looksLikeShare = (hash: string) => /^#\d+[a-z]*\./.test(hash);
+
+/**
+ * A fragment that names an element on this page (the skip-to-content anchor, say) is navigation,
+ * not a share link, so it must not raise a false "damaged link" notice on first load. Anything
+ * that is not an element id, including random junk, still reaches the codec and is reported.
+ */
+const isPageAnchor = (hash: string) => {
+  try {
+    return document.getElementById(decodeURIComponent(hash.slice(1))) !== null;
+  } catch {
+    return false;
+  }
+};
+
 interface Props {
   slug: string;
   presentation?: "page" | "embed";
@@ -96,7 +117,7 @@ export function ExperimentHost({
     };
 
     const readFragment = (): { config: unknown; error: ShareErrorReason | null } => {
-      if (!shareable || location.hash.length <= 1)
+      if (!shareable || location.hash.length <= 1 || isPageAnchor(location.hash))
         return { config: def.defaultConfig, error: null };
       const r = decodeShare(location.hash, def);
       return r.ok
@@ -134,13 +155,16 @@ export function ExperimentHost({
 
     const onHashChange = () => {
       if (!shareable || !handle) return;
-      // Only fragments that claim to be share links ("#1...") are applied. Anything else
-      // (the skip-to-content anchor, a stray #hash) must not reset the experiment or raise a
-      // false "damaged link" notice: keep the current state and restore its share URL.
-      if (!location.hash.startsWith("#1")) {
+      // Only fragments that claim to be share links ("#<version>...") are applied. Anything
+      // else (the skip-to-content anchor, a stray #hash) must not reset the experiment or raise
+      // a false "damaged link" notice: keep the current state and restore its share URL.
+      if (!looksLikeShare(location.hash)) {
         writeNow(current);
         return;
       }
+      // A pasted link replaces whatever edit was waiting on the debounce timer.
+      clearTimeout(pending);
+      hasPending = false;
       const { config, error } = readFragment();
       current = config;
       setNotice(error);

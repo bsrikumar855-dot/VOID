@@ -21,7 +21,8 @@ Environment variables: `PERF_RUNS` (default 3), `PERF_ROUTES` (comma list), `PER
 | Lighthouse best practices / SEO | >= 95 | `npm run perf` |
 | CLS | <= 0.1 | `npm run perf` |
 | Mobile TBT (Lighthouse) | <= 200 ms | `npm run perf` |
-| Initial JavaScript per route, gzip | <= 195 KB (no experiment), <= 225 KB (mounts an experiment) | `npm run perf:budget` |
+| Initial JavaScript per route, gzip | <= 195 KB (no experiment), <= 225 KB (mounts an experiment); experiment routes are discovered from `src/experiments/*`, a missing build output fails | `npm run perf:budget` |
+| JavaScript outside every checked route's initial load (lazy experiment views, other routes), gzip | <= 40 KB (measured 16.4) | `npm run perf:budget`; raise deliberately |
 | Routes with no experiment have no schema library (Zod) on the critical path | must hold | `npm run perf:budget` and `tests/e2e/perf-budget.spec.ts` (Next may still prefetch experiment routes later; see ADR 0007) |
 | No DevTools Issues (CSP violations etc.) | 0 | `tests/e2e/perf-budget.spec.ts`, `tests/e2e/experiments-contract.spec.ts` |
 

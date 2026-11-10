@@ -103,7 +103,9 @@ for (const e of experiments) {
       ],
       [
         "valid envelope, invalid config",
-        `#1j.${b64(JSON.stringify({ v: e.meta.version, id: e.meta.id, config: { __proto__: { x: 1 }, nonsense: true } }))}`,
+        // Built as text: an object literal with __proto__ sets the prototype and JSON.stringify
+        // would silently drop it, so the hostile key would never reach the decoder.
+        `#1j.${b64(`{"v":${e.meta.version},"id":${JSON.stringify(e.meta.id)},"config":{"__proto__":{"x":1},"nonsense":true}}`)}`,
         "invalid-config",
       ],
     ];
@@ -125,13 +127,26 @@ for (const e of experiments) {
     }
 
     test("skip-to-content does not disturb the experiment or its share link", async ({ page }) => {
-      await page.goto(path);
+      // Start from a NON-default configuration when one exists: a bug that resets to defaults
+      // would be invisible if the experiment started on its defaults.
+      const start = e.examples?.[0]?.config ?? e.defaultConfig;
+      await page.goto(`${path}#${encodeShare(e, start)}`);
       await expect(shareInput(page)).toHaveValue(/#1j\./);
       const skip = page.getByRole("link", { name: "Skip to content" });
       await skip.focus();
       await page.keyboard.press("Enter");
       await expect(notice(page)).toHaveCount(0);
-      await expect.poll(() => new URL(page.url()).hash.startsWith("#1j.")).toBe(true);
+      await expect
+        .poll(() => decodeShare(new URL(page.url()).hash, e))
+        .toEqual({ ok: true, config: start });
+    });
+
+    test("an in-page anchor in the first-load URL is not mistaken for a damaged share link", async ({
+      page,
+    }) => {
+      await page.goto(`${path}#main`);
+      await expect(shareInput(page)).toHaveValue(/#1j\./);
+      await expect(notice(page)).toHaveCount(0);
     });
 
     for (const theme of ["dark", "light"] as const) {

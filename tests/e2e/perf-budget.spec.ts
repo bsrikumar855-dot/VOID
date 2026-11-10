@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { experiments } from "@/registry";
 
 /**
  * Cheap, deterministic guards for the performance work in docs/perf (these are NOT
  * Lighthouse scores; `npm run perf` produces those). They catch the specific regressions
  * that were found and fixed.
  */
-const ROUTES = ["/", "/explore", "/experiments/algorithm-arena"];
+// Derived from the registry so a new experiment is covered without editing this file.
+const ROUTES = ["/", "/explore", ...experiments.map((e) => `/experiments/${e.meta.slug}`)];
 
 test.describe("performance and DevTools hygiene", () => {
   for (const route of ROUTES) {
@@ -40,6 +42,19 @@ test.describe("performance and DevTools hygiene", () => {
     expect(srcs.length).toBeGreaterThan(3);
     const bodies = await Promise.all(srcs.map((u) => request.get(u).then((r) => r.text())));
     expect(srcs.filter((_, i) => bodies[i].includes("ZodError"))).toEqual([]);
+  });
+
+  test("positive control: an experiment page's initial scripts DO contain the schema library", async ({
+    request,
+  }) => {
+    // If the marker string were renamed or minified away, the guard above would pass
+    // vacuously. The page that validates share links must contain it.
+    const html = await (await request.get(`/experiments/${experiments[0].meta.slug}`)).text();
+    const srcs = [
+      ...new Set([...html.matchAll(/src="(\/_next\/static\/[^"]+\.js)"/g)].map((m) => m[1])),
+    ];
+    const bodies = await Promise.all(srcs.map((u) => request.get(u).then((r) => r.text())));
+    expect(bodies.some((b) => b.includes("ZodError"))).toBe(true);
   });
 
   test("the homepage hero mounts (two canvases and a control)", async ({ page }) => {

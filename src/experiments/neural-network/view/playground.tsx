@@ -73,7 +73,11 @@ export function Playground({ initialConfig, onChange, register }: Props) {
   const finished = step >= total;
   const running = playing && !finished;
   const acts = activationsAt(net, result, step);
-  const current = step > 0 && step <= total ? result.steps[step - 1] : null;
+  // The neuron being explained: only while a run is in progress. Once every neuron is computed
+  // there is no "current" neuron, the prediction takes over.
+  const current = step > 0 && step < total ? result.steps[step - 1] : null;
+  /** The last computed neuron, shown in the text panel even when the run is finished. */
+  const lastComputed = step > 0 ? result.steps[step - 1] : null;
   const layerCount = net.sizes.length - 1;
   const outputs = result.activations[layerCount];
   const outActivation = config.layers[config.layers.length - 1].activation;
@@ -83,6 +87,7 @@ export function Playground({ initialConfig, onChange, register }: Props) {
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => {
+      setAnnouncement("");
       setStep((s) => Math.min(live.current.total, s + 1));
     }, 1000 / RATES[rateIndex]);
     return () => clearInterval(id);
@@ -92,6 +97,7 @@ export function Playground({ initialConfig, onChange, register }: Props) {
   const commit = (next: NnConfig) => {
     const nextTotal = next.layers.reduce((a, l) => a + l.size, 0);
     const wasLive = live.current.step >= live.current.total;
+    setAnnouncement(""); // a later explicit announcement (randomize, load) is queued after this
     setConfigState(next);
     setStep(wasLive ? nextTotal : Math.min(live.current.step, nextTotal));
     setSelected((s) =>
@@ -114,6 +120,7 @@ export function Playground({ initialConfig, onChange, register }: Props) {
       },
       step: () => {
         setPlaying(false);
+        setAnnouncement("");
         setStep((s) => Math.min(live.current.total, s + 1));
       },
       setConfig: (c) => {
@@ -132,6 +139,7 @@ export function Playground({ initialConfig, onChange, register }: Props) {
     if (e.key === "s" || e.key === "S") {
       e.preventDefault();
       setPlaying(false);
+      setAnnouncement("");
       setStep((s) => Math.min(total, s + 1));
     } else if (e.key === "r" || e.key === "R") {
       e.preventDefault();
@@ -169,8 +177,12 @@ export function Playground({ initialConfig, onChange, register }: Props) {
     const layers = config.layers.map((l, i) => (i === layerIndex ? { ...l, activation } : l));
     commit({ ...config, layers });
   };
-  const changeShape = (inputCount: number, layers: NnConfig["layers"]) => {
-    commit(reshape(config, { inputCount, layers }));
+  const changeShape = (
+    inputCount: number,
+    layers: NnConfig["layers"],
+    from?: ReadonlyArray<number | null>,
+  ) => {
+    commit(reshape(config, { inputCount, layers, from }));
   };
   const randomize = () => {
     const seed = (config.seed + 1) >>> 0;
@@ -184,11 +196,18 @@ export function Playground({ initialConfig, onChange, register }: Props) {
   };
 
   const selectedLayer = selected?.layer ?? 0;
-  const liveText = current
-    ? describeStep(current, layerCount)
-    : prediction
-      ? prediction.summary
-      : announcement;
+  // Selecting a neuron (Enter on the diagram) moves focus to the editor heading so keyboard and
+  // screen-reader users land on what they opened, instead of having to tab past the controls.
+  const editHeading = useRef<HTMLHeadingElement>(null);
+  const selLayer = selected?.layer;
+  const selNeuron = selected?.neuron;
+  useEffect(() => {
+    if (selLayer !== undefined) editHeading.current?.focus();
+  }, [selLayer, selNeuron]);
+  // Explicit announcements (reset, randomize, load) win; otherwise the neuron being explained,
+  // otherwise the finished prediction.
+  const liveText =
+    announcement || (current ? describeStep(current, layerCount) : (prediction?.summary ?? ""));
 
   return (
     <div onKeyDown={onKeyDown} className="flex min-w-0 flex-col gap-8">
@@ -215,6 +234,7 @@ export function Playground({ initialConfig, onChange, register }: Props) {
               className={button}
               onClick={() => {
                 if (finished) {
+                  setAnnouncement("Replaying from the first neuron.");
                   setStep(0);
                   setPlaying(true);
                 } else setPlaying(!running);
@@ -230,6 +250,7 @@ export function Playground({ initialConfig, onChange, register }: Props) {
               onClick={() => {
                 if (finished) return;
                 setPlaying(false);
+                setAnnouncement("");
                 setStep((s) => Math.min(total, s + 1));
               }}
             >
@@ -254,6 +275,7 @@ export function Playground({ initialConfig, onChange, register }: Props) {
               onClick={() => {
                 if (finished) return;
                 setPlaying(false);
+                setAnnouncement("");
                 setStep(total);
               }}
             >
@@ -282,8 +304,8 @@ export function Playground({ initialConfig, onChange, register }: Props) {
               {finished ? "All neurons computed." : `Neuron ${step} of ${total} computed.`}
             </p>
             <p className="m-0 mt-1 min-h-12 max-w-[75ch] tabular-nums">
-              {current
-                ? describeStep(current, layerCount)
+              {lastComputed
+                ? describeStep(lastComputed, layerCount)
                 : "Press Step or Run to compute the network one neuron at a time, or Compute all to see every value."}
             </p>
           </div>
@@ -367,7 +389,12 @@ export function Playground({ initialConfig, onChange, register }: Props) {
           className="rounded-panel border border-line-strong bg-surface p-4"
         >
           <div className="flex items-baseline justify-between gap-3">
-            <h2 id={`${uid}-edit`} className="text-lg font-semibold">
+            <h2
+              id={`${uid}-edit`}
+              ref={editHeading}
+              tabIndex={-1}
+              className="text-lg font-semibold"
+            >
               {selectedLayer === 0
                 ? `Input x${selected.neuron + 1}`
                 : `${selectedLayer === layerCount ? "Output" : `Hidden layer ${selectedLayer}`}, neuron ${selected.neuron + 1}`}
@@ -503,6 +530,7 @@ export function Playground({ initialConfig, onChange, register }: Props) {
                       changeShape(
                         config.inputs.length,
                         config.layers.filter((_, k) => k !== i),
+                        config.layers.map((_, k) => k).filter((k) => k !== i),
                       )
                     }
                     disabled={config.layers.length <= 1}
@@ -523,7 +551,10 @@ export function Playground({ initialConfig, onChange, register }: Props) {
               if (config.layers.length >= MAX_LAYERS) return;
               const layers = config.layers.slice();
               layers.splice(layers.length - 1, 0, { size: 3, activation: "relu" });
-              changeShape(config.inputs.length, layers);
+              // The new layer sits before the output; the output stays the output.
+              const from: Array<number | null> = config.layers.map((_, k) => k);
+              from.splice(from.length - 1, 0, null);
+              changeShape(config.inputs.length, layers, from);
             }}
           >
             Add hidden layer
@@ -545,8 +576,9 @@ export function Playground({ initialConfig, onChange, register }: Props) {
         </div>
         <p className="m-0 max-w-[70ch] text-sm text-muted">
           Select any neuron in the diagram (Tab to reach it, Enter to open) to edit its weights and
-          bias. Editing the shape keeps every weight whose connection still exists. Shortcuts:{" "}
-          <kbd>S</kbd> step, <kbd>R</kbd> reset.
+          bias. Editing the shape keeps the value of every weight whose layer, neuron and input
+          still exist; new connections start small and random, so adding a layer changes what the
+          network computes. Shortcuts: <kbd>S</kbd> step, <kbd>R</kbd> reset.
         </p>
       </section>
 

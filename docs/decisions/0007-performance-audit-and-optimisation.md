@@ -60,7 +60,7 @@ After experiment #2 was added and manifests stopped referencing their views (so 
 | `/experiments/algorithm-arena` | 100 | 74 ms | 762 ms | 2,720 ms | 0 | 100 |
 | `/experiments/neural-network` | 100 | 81 ms | 760 ms | 2,723 ms | 0 | 100 |
 
-Against the original baseline: Arena performance 99 to 100, time to interactive better on every route (baseline 2,826 to 2,975 ms), blocking time 72 to 81 ms (baseline 68 to 113 ms), and much tighter run-to-run spread (blocking time per run on `/`: 76/127/73/82/76). Desktop: 100 on all four routes, CLS 0.005 / 0 / 0.057 / 0.020 (the Arena's 0.057 remains below 0.1). The convention-loaded hero view did **not** cost an extra round trip in these measurements (hero pages' TTI did not regress). Same caveats as above: one machine, localhost, simulated throttling, Edge.
+Against the original baseline: Arena performance 99 to 100, time to interactive better on every route (baseline 2,826 to 2,975 ms), blocking time 72 to 81 ms (baseline 68 to 113 ms), and much tighter run-to-run spread (blocking time per run on `/`: 76/127/73/82/76). Desktop: 100 on all four routes, CLS 0.005 / 0 / 0.057 / 0.020 (the Arena's 0.057 remains below 0.1). The convention-loaded hero view did not regress Lighthouse's time to interactive or blocking time. That is a narrower claim than "no extra round trip": structurally the view chunk is requested only after the host chunk has executed (there is no preload), so a serial fetch exists; it is simply not visible in those metrics, which is how an independent review caught the over-statement (2026-11-10). Measuring when the hero becomes visible (not just interactive) would settle it. Same caveats as above: one machine, localhost, simulated throttling, Edge.
 
 ## Budgets (see `docs/perf/README.md`)
 

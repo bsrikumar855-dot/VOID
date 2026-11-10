@@ -235,6 +235,12 @@ describe("prediction wording", () => {
   it("single non-sigmoid output is a plain number, not a probability", () => {
     expect(predict([1.2], "relu").summary).toContain("plain number");
   });
+  it("exactly 0.5 is stated as the boundary, not as above or below", () => {
+    const s = predict([0.5], "sigmoid").summary;
+    expect(s).toContain("exactly 0.5");
+    expect(s).not.toContain("above");
+    expect(s).not.toContain("below");
+  });
   it("ties go to the first output", () => {
     expect(predict([0.5, 0.5], "linear").best).toBe(0);
   });
@@ -328,6 +334,52 @@ describe("randomParams and reshape", () => {
     const after = toNet(shrunk);
     expect(after.weights[0][0]).toEqual([1, 1]);
     expect(after.weights[1][0]).toEqual([1]);
+  });
+
+  it("inserting a hidden layer keeps the layers around it in place (explicit layer mapping)", () => {
+    const layers = [
+      { size: 2, activation: "relu" as const },
+      { size: 3, activation: "relu" as const },
+      { size: 1, activation: "linear" as const },
+    ];
+    const grown = reshape(defaultNnConfig, { inputCount: 2, layers, from: [0, null, 1] });
+    expect(nnConfigSchema.safeParse(grown).success).toBe(true);
+    const before = toNet(defaultNnConfig);
+    const after = toNet(grown);
+    // hidden layer 1 is exactly the old hidden layer
+    expect(after.weights[0]).toEqual(before.weights[0]);
+    expect(after.biases[0]).toEqual(before.biases[0]);
+    // the output keeps its bias and the weights from the neurons that still exist
+    expect(after.biases[2]).toEqual(before.biases[1]);
+    expect(after.weights[2][0].slice(0, 2)).toEqual(before.weights[1][0]);
+    // the new layer has zero biases and its own (random) weights
+    expect(after.biases[1]).toEqual([0, 0, 0]);
+    // without the mapping the old behaviour would have shifted the output's weights
+    const shifted = toNet(reshape(defaultNnConfig, { inputCount: 2, layers }));
+    expect(shifted.weights[2][0].slice(0, 2)).not.toEqual(before.weights[1][0]);
+  });
+
+  it("removing a hidden layer keeps the other layers' parameters (explicit layer mapping)", () => {
+    const three = reshape(defaultNnConfig, {
+      inputCount: 2,
+      layers: [
+        { size: 2, activation: "relu" },
+        { size: 2, activation: "tanh" },
+        { size: 1, activation: "linear" },
+      ],
+      from: [0, null, 1],
+    });
+    const without = reshape(three, {
+      inputCount: 2,
+      layers: [three.layers[0], three.layers[2]],
+      from: [0, 2],
+    });
+    const a = toNet(three);
+    const b = toNet(without);
+    expect(b.weights[0]).toEqual(a.weights[0]);
+    expect(b.biases[0]).toEqual(a.biases[0]);
+    expect(b.biases[1]).toEqual(a.biases[2]);
+    expect(nnConfigSchema.safeParse(without).success).toBe(true);
   });
 
   it("changing the input count adjusts inputs and first-layer weights, keeping the rest", () => {
