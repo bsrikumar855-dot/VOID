@@ -45,6 +45,10 @@ src/experiments/<slug>/
 
 The view (anything under `view/`, plus `core/`) must not import from `config.ts` at runtime: that file builds the Zod schema, so importing a constant from it ships the whole schema library to every page that can reach your view. Import constants from `limits.ts` and use `import type` for types. `npm run perf:budget` fails if a route with no experiment (`/explore`) ships Zod, and each route has an initial-JavaScript budget.
 
+### If your experiment starts expensive work (WebGL, big arrays, workers)
+
+Opening an experiment must not block the page. Glitch Lab's first version did its setup in one block and cost about 170 ms of extra mobile blocking time (Lighthouse 95, ADR 0009). Wait for the first paint (`requestAnimationFrame` then `setTimeout`) before creating contexts, build large buffers cheaply (copy repeated rows instead of computing every pixel, allocate nothing per pixel), and link WebGL programs with `KHR_parallel_shader_compile` rather than reading link status immediately. Tie the resource to its element with a ref callback that returns a cleanup function, and release GPU contexts in it. Offer a fallback when the capability is missing and say on the page which path is running. Anything that animates must be opt-in, with a warning if it can flicker.
+
 ### Shared building blocks come from the engine
 
 Experiments may not import each other. If two experiments need the same primitive, it moves into `src/engine` and is exported from `@/engine/public`. Today that is the seeded PRNG `mulberry32` (never use `Math.random` in a core), `defineExperiment`, `ExperimentErrorBoundary` and the types.

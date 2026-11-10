@@ -32,6 +32,7 @@ CI does **not** run Lighthouse yet (it is slow and noisy on shared runners); the
 
 - `before.md`: baseline before the optimisation work (2026-11-08).
 - `after-final-mobile.md`, `after-final-desktop.md`: the adopted configuration (5 mobile runs, 3 desktop runs per route).
-- `two-experiments-mobile.md`, `two-experiments-desktop.md`: the final build with two experiments and convention-loaded views (supersede `after-final-*` as the current numbers).
+- `three-experiments-mobile.md`, `three-experiments-desktop.md`: the current numbers, final build with three experiments (5 mobile / 3 desktop runs per route). `two-experiments-*.md` and `after-final-*.md` are earlier states kept as evidence.
+- The Glitch Lab regression (mobile 95, blocking time 252 ms, then fixed to 100 and 78 ms) is documented in ADR 0009; its pre-fix per-route file was not kept.
 - `after-all-changes.md`, `ab-no-inlinecss.md`: rejected variants kept as evidence.
 - The decision record with the comparison tables and the honest reading: `docs/decisions/0007-performance-audit-and-optimisation.md`.

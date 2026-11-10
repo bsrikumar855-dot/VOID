@@ -4,13 +4,13 @@ Single human-readable status file. Machine-readable task state lives in `docs/au
 
 Rule: a feature is **Verified** only with evidence (a command that was run and what it showed). Otherwise **Partially verified** or **Untested**. Nothing here is a claim of production readiness or of security.
 
-_Last updated: 2026-11-10, after the independent review of the second cycle (performance, architectural validation, experiment #2, hardening) and its fixes._
+_Last updated: 2026-11-10, after Glitch Lab (experiment #3) following the independent review of the second cycle and its fixes._
 
 ## Current state
 
 | Field | Value |
 |---|---|
-| Phase | Second cycle complete except items listed under "Open". Two experiments, one engine. |
+| Phase | Three experiments (sorting, neural network, WebGL image glitching), one engine. Open items below. |
 | Repo | https://github.com/bsrikumar855-dot/VOID, branch `main` |
 | Deployed | No. Nothing is deployed; deployment needs the owner's authorisation. |
 | GitHub CI / CodeQL | Both pass on `7e34c74` (CI run 42486559965, all 14 steps green including Linux Chromium e2e; CodeQL run 42486559968). The first CI run failed at typecheck on a clean checkout (missing generated Next route types); fixed in `7e34c74` by running `next typegen` first. Dependabot PRs triaged 2026-11-10: eslint 10, actions/checkout 7, actions/setup-node 7 and the grouped React and CodeQL v4 bumps merged; TypeScript 7 and @types/node 26 refused (ignored in `.github/dependabot.yml` until deliberately migrated). |
@@ -20,24 +20,25 @@ _Last updated: 2026-11-10, after the independent review of the second cycle (per
 | Experiment | State | Evidence |
 |---|---|---|
 | Algorithm Arena (4 sorts, race, painting) | Verified for its defined subset | 78+ core tests, e2e, generic contract |
+| **Glitch Lab** (generated test images, 6 integer GPU effects, frame stepping, opt-in animation, PNG export, CPU fallback) | Verified for its defined scope | `glitch-core.test.ts` (independent Python hash values, per-effect pixel tests, example-claim tests, pinned image digests); `glitch-lab.spec.ts`: the GPU, the in-browser CPU fallback and the Node reference produce byte-identical pixels for six configurations; the downloaded PNG decodes to the same bytes; a deliberate shader bug was caught. ADR 0009. **Not tested:** WebGL context-loss recovery, real reduced-motion system settings, screen readers, non-Chromium browsers, hardware other than this machine's GPU |
 | Neural Network Playground (forward propagation, step-by-step, editable weights, 4 activations, XOR default) | Verified for its defined scope: core maths and schema by unit tests; UI behaviour by `tests/e2e/neural-network.spec.ts` (added after review: step/reset/replay, shortcuts, edit mid-run, live region, focus to editor, shape changes keep weights, randomize/load) | `nn-core.test.ts` (hand-verified XOR truth table, two nets cross-checked against independent Python, 300-network layout property test, schema and reshape tests incl. layer insert/remove retention), `nn-examples.test.ts`, the NN e2e spec, generic browser contract. Real screen-reader output still untested. |
 | **Not built in experiment #2** | Training / backpropagation / datasets (spec §4.1 "training visualization") | the UI says plainly that no training happens |
 
 ## Extensibility: what was actually proven
 
-Adding experiment #2 required, outside its own folder: one import plus one entry in `src/registry/index.ts`; a shared PRNG moved into the engine's public door (own commit); a generic isolation scan found and removed a hard-coded experiment name in the 404 page. Adding it also exposed a real scalability defect (every page importing the registry carried every experiment's view code); fixed by loading views by convention instead of through the manifest. With a temporary third experiment: `/explore` stayed at 175.7 KB gzipped initial JS and `/` grew 0.2 KB. Details: ADR 0008. **Limits of this proof:** two experiments, both React + Canvas/SVG on the main thread; nothing tests a WebGL, Web Worker or server-backed experiment; the third experiment was a copy.
+**Experiment #3 (Glitch Lab, WebGL)** required outside its own folder only one import and one entry in `src/registry/index.ts`; the contract, isolation and budget machinery picked it up with no edits (ADR 0009). Adding experiment #2 had required, outside its own folder: one import plus one entry in `src/registry/index.ts`; a shared PRNG moved into the engine's public door (own commit); a generic isolation scan found and removed a hard-coded experiment name in the 404 page. Adding it also exposed a real scalability defect (every page importing the registry carried every experiment's view code); fixed by loading views by convention instead of through the manifest. With a temporary third experiment: `/explore` stayed at 175.7 KB gzipped initial JS and `/` grew 0.2 KB. Details: ADR 0008. **Limits of this proof:** three experiments, all React on the main thread; WebGL is now covered, a Web Worker or a server-backed experiment still is not.
 
 ## Checks run (2026-11-10 on the final commit of this cycle; Windows 11, Node 24.13.1)
 
 | Check | Result |
 |---|---|
 | `npm run typecheck`, `npm run lint`, `npm run format:check` | clean |
-| `npm run security:secrets` | 172 tracked files, no findings (pattern scan, see ADR 0008) |
-| `npx vitest run` | **246 passed** (13 files) |
-| `npm run build` + `npm run perf:budget` | succeeds; `/` 210.4, `/explore` 175.7, both experiment routes 210.4 KB gzip initial JS (budgets 225 / 195); all other JS (lazy views, other routes) 16.4 KB (budget 40, added after review) |
-| `npx playwright test --workers=2` in **Edge** | **218 passed** (desktop and 360px mobile projects) |
-| same in **Chrome** (`PW_CHANNEL=chrome`) | 192 passed on 2026-11-08 (before the review fixes); **not re-run** since. CI runs Linux Chromium on every push. |
-| Lighthouse 13.6.0, final build | mobile performance **100** on `/`, `/explore`, Arena, Neural Network; desktop **100** on all four; accessibility, best-practices, SEO 100 everywhere. Mobile blocking time 72-81 ms, TTI 2.54-2.73 s. Median of 5 (mobile) / 3 (desktop) runs; `docs/perf/two-experiments-*.md` |
+| `npm run security:secrets` | 173 tracked files, no findings (pattern scan, see ADR 0008) |
+| `npx vitest run` | **301 passed** (14 files) |
+| `npm run build` + `npm run perf:budget` | succeeds; `/` 211.2, `/explore` 175.7, the three experiment routes 211.2 KB gzip initial JS (budgets 225 / 195); all other JS (lazy views, other routes) 23.6 KB (budget 40) |
+| `npx playwright test --workers=2` in **Edge** | **288 passed** (desktop and 360px mobile projects). One earlier full run had one failure that was not captured; it did not recur in two further full runs (288/288 each) or in 208 repeated runs of the two newest specs, so it is an **unidentified one-off**, not a known flake of a particular test |
+| same in **Chrome** (`PW_CHANNEL=chrome`) | the Glitch Lab, contract and perf specs: 158 passed on the final build; the other specs were last run in Chrome on 2026-11-08 (192 passed, before the review fixes). CI runs Linux Chromium on every push. |
+| Lighthouse 13.6.0, final build | mobile performance **100** and desktop **100** on `/`, `/explore`, Arena, Neural Network and Glitch Lab; accessibility, best-practices, SEO 100 everywhere. Mobile blocking time 72-90 ms. Median of 5 (mobile) / 3 (desktop) runs; one of five mobile runs on `/` scored 73; `docs/perf/three-experiments-*.md`. Glitch Lab first measured 95 / 252 ms and was fixed (ADR 0009) |
 | `npm audit --omit=dev --audit-level=high` | 0 vulnerabilities at last check. Dev-only: moderate findings in lint tooling (not fixed). |
 
 Lighthouse caveats: one machine, localhost, Lighthouse's simulated throttling, Edge, not in CI. The Arena page's desktop CLS is 0.057 (below 0.1). Default Playwright parallelism (8 workers) crashed browsers once while C: was full; always use `--workers=2` here.
@@ -74,4 +75,4 @@ C: drive ran out of space earlier (recovered; ~2.4 GB free now, npm cache for th
 1. TypeScript 7 migration (Dependabot ignores majors until then).
 2. Owner actions: approve a Firefox test download; enable GitHub secret scanning and push protection; run the screen-reader checklist (or approve another approach).
 3. Re-review after the fixes above, ideally with an agent that can run code (the Bash tool is still broken here), and human screen-reader testing.
-4. Experiment #3 (Glitch Lab) is the right next test of the engine: it brings canvas/WebGL performance, `prefers-reduced-motion` and image export; Terminal when the owner schedules it.
+4. Check the first CI run of Glitch Lab: its GPU-equals-reference tests run on CI's software GL renderer for the first time there. Then the next test of the engine is something that needs a Web Worker or a server; Terminal when the owner schedules it.
