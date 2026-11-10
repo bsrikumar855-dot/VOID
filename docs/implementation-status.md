@@ -13,7 +13,7 @@ _Last updated: 2026-11-08, end of the second development cycle (performance, arc
 | Phase | Second cycle complete except items listed under "Open". Two experiments, one engine. |
 | Repo | https://github.com/bsrikumar855-dot/VOID, branch `main` |
 | Deployed | No. Nothing is deployed; deployment needs the owner's authorisation. |
-| GitHub CI / CodeQL | Both pass on `7e34c74` (CI run 42486559965, all 14 steps green including Linux Chromium e2e; CodeQL run 42486559968). The first CI run failed at typecheck on a clean checkout (missing generated Next route types); fixed in `7e34c74` by running `next typegen` first. Nine Dependabot PRs are open and unreviewed. |
+| GitHub CI / CodeQL | Both pass on `7e34c74` (CI run 42486559965, all 14 steps green including Linux Chromium e2e; CodeQL run 42486559968). The first CI run failed at typecheck on a clean checkout (missing generated Next route types); fixed in `7e34c74` by running `next typegen` first. Dependabot PRs triaged 2026-11-10: eslint 10, actions/checkout 7, actions/setup-node 7 and the grouped React and CodeQL v4 bumps merged; TypeScript 7 and @types/node 26 refused (ignored in `.github/dependabot.yml` until deliberately migrated). |
 
 ## Experiments
 
@@ -70,7 +70,7 @@ C: drive ran out of space earlier (recovered; ~2.4 GB free now, npm cache for th
 
 ## Open / next
 
-1. Review the nine Dependabot PRs (several are major bumps: TypeScript 7, ESLint 10, actions/checkout 7, @types/node 26). Merge only on the owner's say-so; CI on each PR is the first check.
+1. TypeScript 7 migration (Dependabot ignores majors until then).
 2. Owner actions: approve a Firefox test download; enable GitHub secret scanning and push protection; run the screen-reader checklist (or approve another approach).
 3. Independent review of the second cycle (`/review`, `/qa` equivalents once git/bash tooling works, or the read-only agents again).
 4. Experiment #3 (Glitch Lab) is the right next test of the engine: it brings canvas/WebGL performance, `prefers-reduced-motion` and image export; Terminal when the owner schedules it.
