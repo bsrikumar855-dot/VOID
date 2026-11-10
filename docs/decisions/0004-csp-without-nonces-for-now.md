@@ -13,7 +13,7 @@
 
 ## Decision
 
-Ship the "without nonces" CSP in `next.config.ts`: `default-src 'self'`, `script-src 'self' 'unsafe-inline'`, `style-src 'self' 'unsafe-inline'`, `img-src 'self' data: blob:`, `font-src 'self'`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`. Keeps pages fully static (the architecture and share-link design depend on that) while still blocking plugins, base-tag injection, framing, and third-party script/connect origins.
+Ship the "without nonces" CSP in `next.config.ts`: `default-src 'self'`, `script-src 'self' 'unsafe-inline'`, `style-src 'self' 'unsafe-inline'`, `img-src 'self' data:` (`blob:` was dropped later: nothing uses it, ADR 0006 F5), `font-src 'self'`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`. Keeps pages fully static (the architecture and share-link design depend on that) while still blocking plugins, base-tag injection, framing, and third-party script/connect origins.
 
 ## What this does and does not protect
 

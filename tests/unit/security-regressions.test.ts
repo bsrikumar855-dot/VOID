@@ -73,6 +73,7 @@ describe("share codec: seeded mutation fuzz", () => {
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.%+/=#{}[]\"'<>\\ ";
     const rand = mulberry32(20261108);
     let accepted = 0;
+    let rejected = 0;
     for (let i = 0; i < 4000; i++) {
       const chars = base.split("");
       const edits = 1 + Math.floor(rand() * 4);
@@ -91,10 +92,13 @@ describe("share codec: seeded mutation fuzz", () => {
       if (result?.ok) {
         accepted++;
         expect(def.configSchema.safeParse(result.config).success).toBe(true);
+      } else {
+        rejected++;
       }
     }
     // Sanity: the fuzzer produced both outcomes, so it is not trivially rejecting everything.
-    expect(accepted).toBeGreaterThanOrEqual(0);
+    expect(accepted).toBeGreaterThan(0);
+    expect(rejected).toBeGreaterThan(0);
   });
 
   it("deeply nested and extreme-number JSON is rejected without throwing", () => {

@@ -25,36 +25,41 @@ export const PATTERNS = [
     "JWT (e.g. Supabase service-role key)",
     /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/,
   ],
+  ["npm access token", /\bnpm_[A-Za-z0-9]{36}\b/],
+  ["SendGrid API key", /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\b/],
+  ["Supabase secret key", /\bsb_secret_[A-Za-z0-9_-]{20,}\b/],
+  [
+    "database URL with an embedded password",
+    /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqps?):\/\/[^\s:@/]+:[^\s@/]{3,}@/,
+  ],
 ];
 
 /** Tracked paths that should never exist in the repository. */
 export const FORBIDDEN_FILES = [
   /(^|\/)\.env(\.(?!example$)[^/]+)?$/,
-  /\.pem$/,
+  /\.(pem|key|p12|pfx|jks)$/,
   /(^|\/)id_(rsa|dsa|ecdsa|ed25519)$/,
+  /(^|\/)\.npmrc$/,
+  /(^|\/)(credentials[^/]*|service-account[^/]*)\.json$/,
 ];
 
 /**
  * Return findings for one text blob.
  * @param {string} text
- * @returns {Array<{ name: string, sample: string }>}
+ * @returns {Array<{ name: string }>}
  */
 export function scanText(text) {
-  /** @type {Array<{ name: string, sample: string }>} */
+  /** @type {Array<{ name: string }>} */
   const hits = [];
   for (const [name, re] of PATTERNS) {
     const m = re.exec(text);
-    if (m) hits.push({ name, sample: m[0].slice(0, 6) + "…" });
+    if (m) hits.push({ name }); // never print any part of the match: CI logs are readable
   }
   return hits;
 }
 
 /** Files that legitimately contain the patterns above (this scanner, its tests). */
-const SKIP = [
-  /^scripts\/security\/scan-secrets\.mjs$/,
-  /^tests\/unit\/secret-scan\.test\.ts$/,
-  /^package-lock\.json$/,
-];
+const SKIP = [/^scripts\/security\/scan-secrets\.mjs$/, /^tests\/unit\/secret-scan\.test\.ts$/];
 
 export function scanRepo(root = process.cwd()) {
   const files = execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" })
@@ -82,8 +87,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const { scanned, findings } = scanRepo();
   if (findings.length) {
     console.error(`Possible secrets found (${findings.length}):`);
-    for (const f of findings)
-      console.error(`  ${f.file}: ${f.name}${f.sample ? ` (${f.sample})` : ""}`);
+    for (const f of findings) console.error(`  ${f.file}: ${f.name}`);
     process.exit(1);
   }
   console.log(

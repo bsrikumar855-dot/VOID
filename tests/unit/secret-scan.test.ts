@@ -27,6 +27,10 @@ const fakes: Array<[string, string]> = [
       "abcdefghij1234567890",
     ),
   ],
+  ["npm access token", j("npm", "_", "A1b2".repeat(9))],
+  ["SendGrid API key", j("SG", ".", "abcdefgh12345678", ".", "ABCDEFGH12345678")],
+  ["Supabase secret key", j("sb", "_secret_", "abcDEF123_-".repeat(3))],
+  ["database URL with an embedded password", j("postgres", "://app:hunter22@db.internal/prod")],
 ];
 
 describe("secret scanner", () => {
@@ -41,13 +45,34 @@ describe("secret scanner", () => {
       "const key = process.env.SUPABASE_SERVICE_ROLE_KEY; // read at runtime, never committed",
       "sk-learn is a Python library",
       "AKIA is a prefix",
+      "postgres://localhost:5432/app",
+      "https://example.com:8080/path",
+      "npm_config_cache is an env var name",
     ];
     for (const text of benign) expect(scanText(text), text).toEqual([]);
   });
 
   it("flags files that must never be tracked, but allows .env.example", () => {
-    const bad = [".env", ".env.local", "config/.env.production", "keys/server.pem", "id_rsa"];
-    const ok = [".env.example", "src/env.ts", "docs/pem-notes.md"];
+    const bad = [
+      ".env",
+      ".env.local",
+      "config/.env.production",
+      "keys/server.pem",
+      "id_rsa",
+      "certs/site.key",
+      "certs/site.p12",
+      "release.jks",
+      ".npmrc",
+      "gcp/service-account-prod.json",
+      "aws/credentials.json",
+    ];
+    const ok = [
+      ".env.example",
+      "src/env.ts",
+      "docs/pem-notes.md",
+      "docs/keyboard.md",
+      "package.json",
+    ];
     for (const f of bad)
       expect(
         FORBIDDEN_FILES.some((re: RegExp) => re.test(f)),
