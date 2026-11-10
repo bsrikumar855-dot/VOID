@@ -5,7 +5,22 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      # react and react-dom must always move together
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+    ignore:
+      # TypeScript 7 breaks the typecheck; migrate deliberately, then remove this.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # Types must match the Node runtime used in CI and by contributors (24).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      # codeql-action init and analyze must always be the same version
+      codeql:
+        patterns: ["github/codeql-action/*"]
