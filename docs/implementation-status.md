@@ -13,7 +13,7 @@ _Last updated: 2026-11-08, end of the second development cycle (performance, arc
 | Phase | Second cycle complete except items listed under "Open". Two experiments, one engine. |
 | Repo | https://github.com/bsrikumar855-dot/VOID, branch `main` |
 | Deployed | No. Nothing is deployed; deployment needs the owner's authorisation. |
-| GitHub CI / CodeQL | Workflows exist and are pinned; **neither has ever run** (they first run on push). |
+| GitHub CI / CodeQL | Both pass on `7e34c74` (CI run 42486559965, all 14 steps green including Linux Chromium e2e; CodeQL run 42486559968). The first CI run failed at typecheck on a clean checkout (missing generated Next route types); fixed in `7e34c74` by running `next typegen` first. Nine Dependabot PRs are open and unreviewed. |
 
 ## Experiments
 
@@ -42,7 +42,7 @@ Adding experiment #2 required, outside its own folder: one import plus one entry
 
 Lighthouse caveats: one machine, localhost, Lighthouse's simulated throttling, Edge, not in CI. The Arena page's desktop CLS is 0.057 (below 0.1). Default Playwright parallelism (8 workers) crashed browsers once while C: was full; always use `--workers=2` here.
 
-**Not run:** Firefox and WebKit (Firefox is not installed; Playwright's build would need a download that was not approved); any screen reader (checklist in `docs/a11y/screen-reader-checklist.md`, results table empty); real devices and real networks; GitHub CI; CodeQL; penetration testing.
+**Not run:** Firefox and WebKit (Firefox is not installed; Playwright's build would need a download that was not approved); any screen reader (checklist in `docs/a11y/screen-reader-checklist.md`, results table empty); real devices and real networks; penetration testing. GitHub CI and CodeQL: see the table above (they have run and pass).
 
 ## Performance (ADR 0007)
 
@@ -56,7 +56,7 @@ Independent QA, security and critical reviews of the first slice (read-only mode
 
 - Terminal (spec §10) not built; spec §4.5 breadth beyond four sorts not built; no neural-network training.
 - CSP still allows inline scripts (ADR 0004): not a strong XSS defence; revisit before accounts (M7).
-- Security hygiene: CodeQL and the pinned workflows are unproven until they run; secret scanning is a pattern scan (enable GitHub secret scanning and push protection in repository settings, an owner action); HSTS left to the host.
+- Security hygiene: secret scanning is a pattern scan (enable GitHub secret scanning and push protection in repository settings, an owner action); HSTS left to the host.
 - The Arena still has its own copy of the PRNG (the engine exports one); deduplicating it would modify an unrelated experiment.
 - Painting data in the Arena needs a pointer; the data/size/seed controls are the keyboard path.
 - Neural Network diagram needs a horizontal scroll region on phones (readable size over a squeezed overview).
@@ -70,7 +70,7 @@ C: drive ran out of space earlier (recovered; ~2.4 GB free now, npm cache for th
 
 ## Open / next
 
-1. Push, then read the first GitHub CI and CodeQL results and fix whatever they find.
+1. Review the nine Dependabot PRs (several are major bumps: TypeScript 7, ESLint 10, actions/checkout 7, @types/node 26). Merge only on the owner's say-so; CI on each PR is the first check.
 2. Owner actions: approve a Firefox test download; enable GitHub secret scanning and push protection; run the screen-reader checklist (or approve another approach).
 3. Independent review of the second cycle (`/review`, `/qa` equivalents once git/bash tooling works, or the read-only agents again).
 4. Experiment #3 (Glitch Lab) is the right next test of the engine: it brings canvas/WebGL performance, `prefers-reduced-motion` and image export; Terminal when the owner schedules it.
