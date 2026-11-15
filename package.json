@@ -31,7 +31,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^10",
-    "eslint-config-next": "16.4.5",
+    "eslint-config-next": "16.4.6",
     "lighthouse": "13.6.0",
     "prettier": "^3.10.1",
     "tailwindcss": "^4",
