@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { experiments } from "@/registry";
 import { skipAxeOnFirefox } from "./firefox-axe";
 
 skipAxeOnFirefox();
@@ -82,7 +83,7 @@ test.describe("homepage", () => {
     page,
   }) => {
     await page.goto("/");
-    await expect(page.getByRole("link").filter({ hasText: /Algorithm Arena/ })).toHaveCount(3);
+    await expect(page.locator('a[href^="/experiments/algorithm-arena#"]')).toHaveCount(3);
     const expected: Array<[RegExp, string, string, string]> = [
       [/When quick sort is not quick/, "quick", "merge", "reversed"],
       [/Nearly sorted data/, "insertion", "bubble", "nearly-sorted"],
@@ -97,6 +98,60 @@ test.describe("homepage", () => {
       await expect(page.getByLabel("Items:", { exact: false })).toHaveValue("64");
       expect(page.url()).toContain("#1j.");
     }
+  });
+
+  test("every experiment other than the hero's has its own entry: image with alt text and an Open link", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const section = page.locator('section[aria-labelledby="experiments-title"]');
+    const others = experiments.slice(1);
+    await expect(section.locator("article")).toHaveCount(others.length);
+    for (const e of others) {
+      const entry = section.locator("article").filter({ hasText: e.meta.title });
+      await expect(entry.getByRole("heading", { level: 3, name: e.meta.title })).toBeVisible();
+      await expect(entry.getByRole("link", { name: `Open ${e.meta.title}` })).toHaveAttribute(
+        "href",
+        `/experiments/${e.meta.slug}`,
+      );
+      const img = entry.getByRole("img");
+      // An experiment with a captured specimen shows it (scripts/previews/capture.mjs) with real alt text.
+      if ((await img.count()) > 0) {
+        const alt = await img.first().getAttribute("alt");
+        expect(alt, `${e.meta.slug} alt`).toBeTruthy();
+        expect(alt!.length, `${e.meta.slug} alt is descriptive`).toBeGreaterThan(30);
+        // It must really decode (not a broken link).
+        await expect
+          .poll(() => img.first().evaluate((el: HTMLImageElement) => el.naturalWidth))
+          .toBeGreaterThan(0);
+      }
+    }
+    // The hero's own experiment is not repeated as a second entry.
+    await expect(
+      section.getByRole("link", { name: `Open ${experiments[0].meta.title}` }),
+    ).toHaveCount(0);
+  });
+
+  test("the 'not built yet' list never names an experiment that is in the registry", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const text = (await page.locator("main").innerText()).toLowerCase();
+    const match = text.match(/not built yet:([^.]*)\./);
+    expect(match, "the page lists what is not built").not.toBeNull();
+    for (const e of experiments) {
+      for (const word of [e.meta.title.toLowerCase(), e.meta.slug.replace(/-/g, " ")]) {
+        expect(match![1], `"${word}" is built, so it cannot be listed as not built`).not.toContain(
+          word,
+        );
+      }
+    }
+  });
+
+  test("copy hygiene: no em or en dashes in the visible text of the homepage", async ({ page }) => {
+    await page.goto("/");
+    const text = await page.locator("main").innerText();
+    expect(text).not.toMatch(/[\u2014\u2013]/);
   });
 
   test("does not invent content: no community, trending, user or activity claims", async ({

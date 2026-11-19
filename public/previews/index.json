@@ -1,0 +1,14 @@
+{
+  "glitch-lab": {
+    "file": "glitch-lab.jpg",
+    "width": 512,
+    "height": 512,
+    "alt": "Glitch Lab at its default settings: colour bars with torn rows, a red and blue fringe on every edge, light noise and scanlines."
+  },
+  "neural-network": {
+    "file": "neural-network.png",
+    "width": 757,
+    "height": 178,
+    "alt": "Neural Network Playground at its default settings: two inputs, two hidden neurons and one output, computing XOR, with the value shown on every neuron."
+  }
+}
