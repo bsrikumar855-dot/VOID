@@ -30,8 +30,8 @@ People open a link or the homepage, interact with a live experiment in the brows
 
 ## Capabilities and Constraints
 
-Built and verified (see `docs/implementation-status.md`): the Algorithm Arena (four sorting algorithms, two-algorithm race, operation counters), fragment-based share links, an experiment registry and contract, homepage with a live hero, Explore, dark and light themes.
-Not built (must not be implied anywhere in the UI): neural network playground, traffic simulator, agent arena, codebase x-ray, other labs, accounts, publishing, remixing, community, challenges, terminal.
+Built and verified (see `docs/implementation-status.md`): the Algorithm Arena (four sorting algorithms, two-algorithm race, operation counters), the Neural Network Playground (forward propagation, step by step, editable weights), Glitch Lab (WebGL image effects with exact, testable output and PNG export), fragment-based share links, an experiment registry and contract, a homepage with a live hero and an entry per experiment (each with a real captured image), Explore, dark and light themes.
+Not built (must not be implied anywhere in the UI): neural network _training_ (the playground only runs forward), traffic simulator, agent arena, codebase x-ray, other labs, accounts, publishing, remixing, community, challenges, terminal.
 Constraints: no fake statistics, activity, users or AI output; simulated data labelled as simulated; demo output never presented as real AI; WCAG 2.1 AA target; no deployment without the owner's authorisation.
 Undecided: deploy target and domain; AI providers and budget; analytics approach; editorial serif; whether Impeccable's launcher may download its binary.
 
