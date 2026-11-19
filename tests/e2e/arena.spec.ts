@@ -1,5 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { skipAxeOnFirefox } from "./firefox-axe";
+
+skipAxeOnFirefox();
 
 const PATH = "/experiments/algorithm-arena";
 

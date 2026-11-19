@@ -43,7 +43,7 @@ _Last updated: 2026-11-10, after Glitch Lab (experiment #3) following the indepe
 
 **Re-measurement on 2026-11-19 was inconclusive and is not a result.** After Dependabot's Next 16.4.5 to 16.4.6 bump, mobile Lighthouse on this machine read 87-93 with blocking time 300-510 ms on every route. An A/B on the same machine, same session, showed the PREVIOUS commit on Next 16.4.5 scoring 89 and 91 on the two routes tried, so the bump is not the cause: the machine was under about 42% background CPU load from other applications, which Lighthouse's simulated throttling is sensitive to. The 100s in `docs/perf/three-experiments-*.md` were taken on a quiet machine and are unchanged; they should be re-taken on a quiet machine against the current Next, and the discarded runs were not kept. Lighthouse caveats: one machine, localhost, Lighthouse's simulated throttling, Edge, not in CI. The Arena page's desktop CLS is 0.057 (below 0.1). Default Playwright parallelism (8 workers) crashed browsers once while C: was full; always use `--workers=2` here.
 
-**Not run:** Firefox and WebKit (Firefox is not installed; Playwright's build would need a download that was not approved); any screen reader (checklist in `docs/a11y/screen-reader-checklist.md`, results table empty); real devices and real networks; penetration testing. GitHub CI and CodeQL: see the table above (they have run and pass).
+**Firefox (2026-11-19, Playwright's Firefox, installed on D: with the owner's approval):** `PW_BROWSER=firefox` runs the same suite: **252 passed, 0 failed, 36 skipped** (16 Chromium-only DevTools checks and 20 axe scans). Glitch Lab's GPU-equals-reference pixel tests and PNG export pass in Firefox. The axe scans of pages with a mounted experiment crash Playwright's Firefox ("Page crashed"); this is not understood and not shown to be an accessibility defect (details and what was ruled out in `tests/e2e/firefox-axe.ts`), so those scans run in Chromium only. An earlier hypothesis that React's generated ids caused it was tested and was wrong. **Not run:** WebKit/Safari; any screen reader (checklist in `docs/a11y/screen-reader-checklist.md`, results table empty); real devices and real networks; penetration testing. GitHub CI and CodeQL: see the table above (they have run and pass).
 
 ## Performance (ADR 0007)
 
@@ -73,6 +73,6 @@ C: drive ran out of space earlier (recovered; ~2.4 GB free now, npm cache for th
 ## Open / next
 
 1. TypeScript 7 migration (Dependabot ignores majors until then).
-2. Owner actions: approve a Firefox test download; enable GitHub secret scanning and push protection; run the screen-reader checklist (or approve another approach).
+2. Owner actions: enable GitHub secret scanning and push protection; run the screen-reader checklist (or approve another approach).
 3. Re-review after the fixes above, ideally with an agent that can run code (the Bash tool is still broken here), and human screen-reader testing.
 4. Check the first CI run of Glitch Lab: its GPU-equals-reference tests run on CI's software GL renderer for the first time there. Then the next test of the engine is something that needs a Web Worker or a server; Terminal when the owner schedules it.

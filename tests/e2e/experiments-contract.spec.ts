@@ -2,6 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { decodeShare, encodeShare } from "@/engine/share/codec";
 import { experiments } from "@/registry";
+import { skipAxeOnFirefox } from "./firefox-axe";
+
+skipAxeOnFirefox();
 
 /**
  * Browser-level contract for EVERY registered experiment. Adding an experiment adds these

@@ -1,5 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { skipAxeOnFirefox } from "./firefox-axe";
+
+skipAxeOnFirefox();
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];

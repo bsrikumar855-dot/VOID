@@ -20,23 +20,34 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
   },
-  projects: [
-    {
-      name: "desktop",
-      use: {
-        ...devices["Desktop Chrome"],
-        ...(process.env.CI ? {} : { channel: LOCAL_CHANNEL }),
-      },
-    },
-    {
-      name: "mobile-360",
-      use: {
-        ...devices["Pixel 7"],
-        viewport: { width: 360, height: 740 },
-        ...(process.env.CI ? {} : { channel: LOCAL_CHANNEL }),
-      },
-    },
-  ],
+  // PW_BROWSER=firefox runs the same suite in Playwright's Firefox (installed separately with
+  // `npx playwright install firefox`; set PLAYWRIGHT_BROWSERS_PATH to choose where it lives).
+  projects:
+    process.env.PW_BROWSER === "firefox"
+      ? [
+          { name: "desktop", use: { ...devices["Desktop Firefox"] } },
+          {
+            name: "mobile-360",
+            use: { ...devices["Desktop Firefox"], viewport: { width: 360, height: 740 } },
+          },
+        ]
+      : [
+          {
+            name: "desktop",
+            use: {
+              ...devices["Desktop Chrome"],
+              ...(process.env.CI ? {} : { channel: LOCAL_CHANNEL }),
+            },
+          },
+          {
+            name: "mobile-360",
+            use: {
+              ...devices["Pixel 7"],
+              viewport: { width: 360, height: 740 },
+              ...(process.env.CI ? {} : { channel: LOCAL_CHANNEL }),
+            },
+          },
+        ],
   webServer: {
     command: `npm run start -- -p ${PORT} -H 127.0.0.1`,
     url: `http://127.0.0.1:${PORT}`,

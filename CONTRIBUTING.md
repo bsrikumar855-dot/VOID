@@ -17,7 +17,7 @@ npm run dev            # http://localhost:3000
 npm run check          # typecheck, lint, unit tests, build, end-to-end tests (CI also runs `npm run format:check`)
 ```
 
-End-to-end tests drive Microsoft Edge locally (no download). In CI they use Chromium via `npx playwright install --with-deps chromium`.
+End-to-end tests drive Microsoft Edge locally (no download). In CI they use Chromium via `npx playwright install --with-deps chromium`. To run the suite in Firefox as well: `npx playwright install firefox` (set `PLAYWRIGHT_BROWSERS_PATH` to choose where it is stored), then `PW_BROWSER=firefox npm run test:e2e`. The axe accessibility scans are skipped in Firefox because Playwright's Firefox crashes while scanning pages with a mounted experiment (see `tests/e2e/firefox-axe.ts`); they still run in Chromium.
 
 ## Add an experiment
 
